@@ -7,8 +7,10 @@
     "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "Maximum tokens for Claude responses. Higher values allow longer outputs but cost more."
   },
   "env": {
-    "PAI_DIR": "/Users/YOURNAME/.claude",
-    "DA": "PAI",
+    "PAI_DIR": "/workspace/PAI/.claude",
+    "DA": "Vai",
+    "ENGINEER_NAME": "Khali",
+    "DA_COLOR": "cyan",
     "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "64000"
   },
   "permissions": {
@@ -131,6 +133,10 @@
           {
             "type": "command",
             "command": "${PAI_DIR}/hooks/initialize-session.ts"
+          },
+          {
+            "type": "command",
+            "command": "${PAI_DIR}/hooks/check-pai-updates.ts"
           },
           {
             "type": "command",
