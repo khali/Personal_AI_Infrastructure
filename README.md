@@ -3,250 +3,324 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./pai-logo.png">
   <source media="(prefers-color-scheme: light)" srcset="./pai-logo.png">
-  <img alt="PAI Logo" src="./pai-logo.png" width="1200">
+  <img alt="PAI Logo" src="./pai-logo.png" width="600">
 </picture>
 
-# **Personal AI Infrastructure** (PAI)
+<br/>
+<br/>
 
-### **Open-source personal AI infrastructure for orchestrating your life and work**
+# Personal AI Infrastructure
+
+### Open-source scaffolding for building your own AI-powered operating system
 
 <br/>
 
-![Version](https://img.shields.io/badge/version-0.9.0-blue)
-![Static Badge](https://img.shields.io/badge/mission-upgrade_humans_using_AI-8B5CF6)
-![GitHub last commit](https://img.shields.io/github/last-commit/danielmiessler/Personal_AI_Infrastructure)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Claude Code](https://img.shields.io/badge/Powered%20by-Claude%20Code-blue)](https://claude.ai/code)
-[![PAI Video](https://img.shields.io/badge/🎥_Watch-PAI_Video-6B46C1)](https://youtu.be/iKwRWwabkEc)
+[![Version](https://img.shields.io/badge/version-0.9.0-blue?style=for-the-badge)](https://github.com/danielmiessler/Personal_AI_Infrastructure/releases)
+[![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
+[![Claude Code](https://img.shields.io/badge/Claude_Code-Powered-8B5CF6?style=for-the-badge)](https://claude.ai/code)
 
-**[Quick Start](#-quick-start)** • **[Documentation](#-documentation)** • **[Examples](#-examples)** • **[Community](#-community)**
+<br/>
+
+[**Quick Start**](#-quick-start) · [**Documentation**](#-documentation) · [**Examples**](#-examples) · [**Updates**](#-updates) · [**Community**](#-community)
+
+<br/>
+
+[![PAI Overview Video](https://img.youtube.com/vi/iKwRWwabkEc/maxresdefault.jpg)](https://youtu.be/iKwRWwabkEc)
+
+**[Watch the full PAI walkthrough](https://youtu.be/iKwRWwabkEc)** | **[Read: The Real Internet of Things](https://danielmiessler.com/blog/real-internet-of-things)**
+
+<br/>
+
+---
+
+<br/>
+
+## This project exists so that the best AI in the world is not only used by a few, but can be used by everyone.
 
 </div>
 
----
+<br/>
 
-<div align="center">
+Right now the most powerful AI setups are being built inside companies with massive engineering teams, and for the purpose of increasing efficiency and profits.
 
-## *"This project exists so that the best AI in the world is not only used by a few, but can be used by everyone."*
+That's all good, but I think the purpose of technology is to serve humans—not the other way around. These new AI frameworks should be available to everyone, including people not in technology, so that regular people can use it to help them flourish.
 
-</div>
+That's what PAI is. It's the foundation for building a Personal AI System that understands your larger goals and context, gets better over time, and that works for *you* because it's *yours*. Not some generic chatbot. Not some common assistant. A full platform for magnifying yourself and your impact on the world.
 
-Right now the most powerful AI setups are being built inside companies with massive engineering teams. That's backwards. These tools should be available to individuals—to you—so you can build your own AI system that actually knows how you work.
+**Related reading:**
+- [The Real Internet of Things](https://danielmiessler.com/blog/real-internet-of-things) — The vision behind PAI (full book)
+- [AI's Predictable Path: 7 Components](https://danielmiessler.com/blog/ai-predictable-path-7-components-2024) — Visual walkthrough of where AI is heading
 
-That's what PAI is. It's the scaffolding for building a personal AI that gets better over time because it's *yours*. Not some generic chatbot. Your system, your skills, your workflows.
+<br/>
 
----
+## What is PAI?
 
-## 🎯 **What is PAI?**
+PAI (Personal AI Infrastructure) is an open-source template for building your own AI-powered operating system. It's currently built on [Claude Code](https://claude.ai/code), but designed to be platform-independent — the architecture, skills, and workflows are structured so future migrations to other AI platforms are straightforward.
 
-PAI (Personal AI Infrastructure) is an open-source template for building your own AI-powered operating system using Claude Code.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/skills-architecture.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/images/skills-architecture.png">
+  <img alt="PAI Skills Architecture" src="docs/images/skills-architecture.png" width="800">
+</picture>
 
-**Core Primitives:**
-- **Skills** - Self-contained AI capabilities with routing, workflows, and documentation
-- **Agents** - Specialized AI personalities for different tasks (engineer, researcher, designer, etc.)
-- **Hooks** - Event-driven automation that captures work, provides voice feedback, and manages state
+| Component | Description |
+|-----------|-------------|
+| **Skills** | Self-contained AI capabilities with routing, workflows, and documentation |
+| **Agents** | Specialized AI personalities for different tasks (engineer, researcher, designer) |
+| **Hooks** | Event-driven automation that captures work and manages state |
+| **History** | Automatic documentation system (UOCS) that captures everything |
 
-**Approach:** Start clean, small, and simple. Build the scaffolding that makes AI reliable.
+> [!TIP]
+> **Start clean, small, and simple.** Build the scaffolding that makes AI reliable.
 
----
+<br/>
 
-## 🆕 **What's New in v0.9.0**
+## What's New in v0.9.0
 
-Big updates! PAI is now fully **platform-agnostic** - your AI identity, your system.
+Big updates! PAI is now fully **platform-agnostic** — your AI identity, your system.
 
-- **Observability Dashboard** - Real-time agent monitoring with live charts
-- **Genericized Identity** - Configure your DA name, it flows everywhere
-- **Better Configuration** - Clear docs for all environment variables
+| Feature | Description |
+|---------|-------------|
+| 📊 **Observability Dashboard** | Real-time agent monitoring with live charts |
+| 🎭 **Genericized Identity** | Configure your DA name, it flows everywhere |
+| ⚙️ **Better Configuration** | Clear docs for all environment variables |
 
-👉 **[See full changelog below](#-changelog)**
+👉 [**See full changelog**](#-updates)
 
----
+<br/>
 
-## 🔄 **PAI vs Kai: What You Get**
 
-**PAI (this repository) provides:**
-- ✅ Skills/agents/hooks architecture
-- ✅ CORE documentation and routing
-- ✅ History system (UOCS) for automatic documentation
-- ✅ Example skills (research, fabric, etc.)
-- ✅ Voice server skeleton
-- ⚙️ **Requires:** API key configuration per skill
+## 🚀 Quick Start
 
-**Kai (Daniel's private system) adds:**
-- 🔒 Personal data, contacts, and history
-- 🔒 Additional private skills and workflows
-- 🔒 Customized agent personalities and voices
-- 🔒 Production integrations and automations
-
-**Think of it this way:** PAI is the scaffolding. You build your own "Kai" on top of it.
-
-**After setup, PAI should:**
-- ✅ Execute hooks without errors
-- ✅ Load CORE context at session start
-- ✅ Route skills correctly
-- ✅ Capture session history
-- ✅ Launch agents successfully
-
-**Not working?** Run the health check:
-```bash
-bun ${PAI_DIR}/hooks/self-test.ts
-```
-
-See `PAI_CONTRACT.md` for complete details on what's guaranteed vs what needs configuration.
-
----
-
-## 🚀 **Quick Start**
-
-### 1. Install Prerequisites
+### 1. Clone PAI
 
 ```bash
-# Install Bun (PAI's package manager)
-curl -fsSL https://bun.sh/install | bash
-
-# Install Claude Code
-# Follow instructions at: https://code.claude.com
-```
-
-### 2. Clone and Configure
-
-```bash
-# Clone the repository
 git clone https://github.com/danielmiessler/Personal_AI_Infrastructure.git
 cd Personal_AI_Infrastructure
+```
 
+### 2. Run the Setup Wizard
+
+```bash
+.claude/tools/setup/bootstrap.sh
+```
+
+The bootstrap script will:
+- Check your shell (recommends zsh or bash)
+- Install Bun if needed (PAI's package manager)
+- Check for Claude Code
+- Launch the interactive setup wizard
+
+The setup wizard will:
+- Ask where to install PAI (default: `~/.claude`)
+- Configure your name and email
+- Name your AI assistant (default: "Kai")
+- Choose a color theme
+- Set up voice server (macOS)
+- Add environment variables to your shell
+
+### 3. Add Your API Keys
+
+```bash
 # Copy environment template
-cp .claude/.env.example .claude/.env
+cp ~/.claude/.env.example ~/.claude/.env
 
-# Edit .env and add your API keys
-# At minimum: ANTHROPIC_API_KEY=your_key_here
-```
-
-### 3. Copy to Your System
-
-```bash
-# Backup existing Claude config (if any)
-[ -d ~/.claude ] && mv ~/.claude ~/.claude.backup.$(date +%Y%m%d_%H%M%S)
-
-# Copy PAI's .claude directory to your home
-cp -r .claude ~/.claude
-```
-
-**Alternative: Symlink** (keeps PAI updatable via git pull)
-```bash
-[ -d ~/.claude ] && mv ~/.claude ~/.claude.backup.$(date +%Y%m%d_%H%M%S)
-ln -s $(pwd)/.claude ~/.claude
+# Edit with your API keys
+nano ~/.claude/.env
 ```
 
 ### 4. Start Claude Code
 
 ```bash
-# PAI loads automatically via the CORE skill
+source ~/.zshrc  # Load PAI environment
 claude
 ```
 
-**That's it!** The CORE skill loads at session start and provides all PAI functionality.
+> [!TIP]
+> **Non-interactive setup** for automation:
+> ```bash
+> bun run setup.ts --pai-dir ~/.claude --name "Your Name" --email you@example.com --force
+> ```
 
-📚 **For detailed setup:** See `docs/QUICKSTART.md`
+📚 For detailed setup, see [`docs/QUICKSTART.md`](docs/QUICKSTART.md)
 
----
+<br/>
 
-## 📚 **Documentation**
+## 📚 Documentation
 
-**All documentation lives in the CORE skill** (`.claude/skills/CORE/`):
+All documentation lives in the CORE skill (`.claude/skills/CORE/`):
 
-### **Essential Reading**
+| Document | Description |
+|----------|-------------|
+| [**CONSTITUTION.md**](.claude/skills/CORE/CONSTITUTION.md) | System philosophy, architecture, operating principles |
+| [**SkillSystem.md**](.claude/skills/CORE/SkillSystem.md) | **How to create your own skills** — the canonical skill structure guide |
+| [**SKILL.md**](.claude/skills/CORE/SKILL.md) | Main PAI skill with identity, preferences, quick reference |
+| [hook-system.md](.claude/skills/CORE/hook-system.md) | Event-driven automation |
+| [history-system.md](.claude/skills/CORE/history-system.md) | Automatic work documentation (UOCS) |
 
-- **[CONSTITUTION.md](.claude/skills/CORE/CONSTITUTION.md)** - System philosophy, architecture, and operating principles
-- **[SKILL.md](.claude/skills/CORE/SKILL.md)** - Main PAI skill with identity, preferences, and quick reference
-- **[SKILL-STRUCTURE-AND-ROUTING.md](.claude/skills/CORE/SKILL-STRUCTURE-AND-ROUTING.md)** - How to create your own skills
+<details>
+<summary><strong>Additional Reference</strong></summary>
 
-### **System Guides**
+| Document | Description |
+|----------|-------------|
+| [prompting.md](.claude/skills/CORE/prompting.md) | Prompt engineering patterns |
+| [aesthetic.md](.claude/skills/CORE/aesthetic.md) | Visual design system |
+| [voice-server/README.md](.claude/voice-server/README.md) | Text-to-speech feedback |
 
-- **[hook-system.md](.claude/skills/CORE/hook-system.md)** - Event-driven automation
-- **[history-system.md](.claude/skills/CORE/history-system.md)** - Automatic work documentation
-- **[VOICE.md](.claude/skills/CORE/VOICE.md)** → **[voice-server/README.md](.claude/voice-server/README.md)** - Text-to-speech feedback
+</details>
 
-### **Reference**
+<br/>
 
-- **[prosody-guide.md](.claude/skills/CORE/prosody-guide.md)** - Voice emotion system
-- **[prompting.md](.claude/skills/CORE/prompting.md)** - Prompt engineering patterns
-- **[terminal-tabs.md](.claude/skills/CORE/terminal-tabs.md)** - Terminal management
-
----
-
-## 🎨 **Examples**
+## 🎨 Examples
 
 Explore example skills in `.claude/skills/`:
 
-- **`observability/`** - Real-time agent monitoring dashboard with WebSocket streaming, live pulse charts, and event timelines
-- **`brightdata/`** - Four-tier progressive web scraping with automatic fallback (WebFetch → cURL → Playwright → Bright Data MCP)
-- **`fabric/`** - Integration with Fabric pattern system (242+ AI patterns)
-- **`research/`** - Multi-source research workflows
-- **`create-skill/`** - Templates for creating new skills
-- **`alex-hormozi-pitch/`** - Business pitch generation
-- **`ffuf/`** - Web fuzzing and security testing
+| Skill | Description |
+|-------|-------------|
+| **observability/** | Real-time agent monitoring dashboard with WebSocket streaming |
+| **brightdata/** | Four-tier progressive web scraping with automatic fallback |
+| **fabric/** | Integration with Fabric pattern system (242+ AI patterns) |
+| **research/** | Multi-source research workflows |
+| **create-skill/** | Templates for creating new skills |
 
 Each skill demonstrates the skills-as-containers pattern with routing, workflows, and self-contained documentation.
 
----
+<br/>
 
-## 🏗️ **Architecture**
+## 🏗️ Architecture
 
-PAI is built on three foundational principles:
+PAI is built on 12 foundational principles:
 
-### **1. Command Line First**
-Build deterministic CLI tools, then wrap them with AI orchestration. Code is cheaper, faster, and more reliable than prompts.
+<table>
+<tr>
+<td width="50%" valign="top">
 
-### **2. Skills as Containers**
-Package domain expertise in self-activating, self-contained modules. Natural language triggers automatic routing to the right skill.
+**π Scaffolding > Model**<br/>
+The infrastructure matters more than any single model
 
-### **3. Progressive Disclosure**
-Load context only when needed (3 tiers):
-- **Tier 1:** System prompt (always active, 200-500 words)
-- **Tier 2:** SKILL.md (on-demand, comprehensive reference)
-- **Tier 3:** Reference files (just-in-time, deep dives)
+**π ENG / SRE**<br/>
+Treat AI systems like production engineering
 
-**Complete architecture:** See `.claude/skills/CORE/CONSTITUTION.md`
+**π As Deterministic as Possible**<br/>
+Reduce randomness, increase reliability
 
----
+**π Code Before Prompts**<br/>
+Write code first, wrap with prompts second
 
-## 🛠️ **Technology Stack**
+**π UNIX Philosophy**<br/>
+Small, composable tools that do one thing well
 
-- **Runtime:** Bun (NOT Node.js)
-- **Language:** TypeScript (NOT Python - we're TypeScript zealots)
-- **Package Manager:** Bun (NOT npm/yarn/pnpm)
-- **Format:** Markdown (NOT HTML for basic content)
-- **Testing:** Vitest when needed
-- **Voice:** ElevenLabs TTS integration
+**π CLI as Interface**<br/>
+Command line is the primary interaction layer
 
----
+</td>
+<td width="50%" valign="top">
 
-## 🔐 **Security**
+**π Goal → Code → CLI → Prompts → Agent**<br/>
+The implementation hierarchy
 
-**IMPORTANT:** This is a PUBLIC template repository with sanitized examples.
+**π Spec / Test / Evals First**<br/>
+Define success before building
 
-**DO NOT commit:**
-- API keys or secrets
-- Personal email addresses or contact information
-- Private repository references
-- Any sensitive personal data
+**π Meta / Self Updates**<br/>
+The system improves itself
 
-See `SECURITY.md` for complete security protocols.
+**π Custom Skill Management**<br/>
+3-tier architecture, routing, workflows, tools
 
----
+**π History**<br/>
+Automatic documentation of all work
 
-## 💬 **Community**
+**π Custom Agent Personalities / Voices**<br/>
+Specialized agents for different tasks
 
-- **GitHub Issues:** [Report bugs or request features](https://github.com/danielmiessler/Personal_AI_Infrastructure/issues)
-- **Discussions:** [Ask questions and share ideas](https://github.com/danielmiessler/Personal_AI_Infrastructure/discussions)
-- **Video:** [Watch PAI Overview](https://youtu.be/iKwRWwabkEc)
+</td>
+</tr>
+</table>
 
----
+Complete architecture: [`.claude/skills/CORE/CONSTITUTION.md`](.claude/skills/CORE/CONSTITUTION.md)
 
-## 📝 **Changelog**
+### Core Systems
 
-### v0.9.0 (2025-12-01) - Platform Agnostic Release
+<details open>
+<summary><strong>Skills Architecture</strong> — 3-tier progressive disclosure</summary>
+
+<br/>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/skills-architecture.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/images/skills-architecture.png">
+  <img alt="Skills Architecture" src="docs/images/skills-architecture.png" width="800">
+</picture>
+
+Skills are self-contained containers with SKILL.md as the entry point. Workflows handle multi-step operations, tools provide CLI scripts, and docs contain reference material — all progressively loaded only when needed.
+
+</details>
+
+<details>
+<summary><strong>Hook System</strong> — Event-driven automation</summary>
+
+<br/>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/hook-system.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/images/hook-system.png">
+  <img alt="Hook System" src="docs/images/hook-system.png" width="800">
+</picture>
+
+Hooks capture everything automatically — before tool execution, after tool execution, and on user feedback. Scripts like `capture-all-events.ts` and `capture-session-summary.ts` run invisibly to build context.
+
+</details>
+
+<details>
+<summary><strong>History System</strong> — Automatic documentation (UOCS)</summary>
+
+<br/>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/history-system.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/images/history-system.png">
+  <img alt="History System" src="docs/images/history-system.png" width="800">
+</picture>
+
+Everything is captured, nothing is lost. Session work, tool outputs, and agent results flow into the history system, producing markdown files, JSONL logs, and timestamped entries organized by date.
+
+</details>
+
+<br/>
+
+## 🛠️ Technology Stack
+
+| Category | Choice | Note |
+|----------|--------|------|
+| **Runtime** | Bun | NOT Node.js |
+| **Language** | TypeScript | NOT Python |
+| **Package Manager** | Bun | NOT npm/yarn/pnpm |
+| **Format** | Markdown | NOT HTML for basic content |
+| **Testing** | Vitest | When needed |
+| **Voice** | ElevenLabs | TTS integration |
+
+<br/>
+
+## 💬 Community
+
+Kai and I work hard to address issues and PRs throughout the week — we try not to get too far behind!
+
+| Channel | Link |
+|---------|------|
+| 🐛 **Issues** | [Report bugs or request features](https://github.com/danielmiessler/Personal_AI_Infrastructure/issues) |
+| 💬 **Discussions** | [Ask questions and share ideas](https://github.com/danielmiessler/Personal_AI_Infrastructure/discussions) |
+| 🎥 **Video** | [Watch the full PAI walkthrough](https://youtu.be/iKwRWwabkEc) |
+| 📝 **Blog** | [The Real Internet of Things](https://danielmiessler.com/blog/real-internet-of-things) |
+
+<br/>
+
+## 📝 Updates
+
+<details>
+<summary><strong>v0.9.0 (2025-12-01) — Platform Agnostic Release</strong></summary>
+
+<br/>
 
 This release focuses on making PAI fully portable and fork-friendly. Your AI, your identity, your system.
 
@@ -256,60 +330,142 @@ This release focuses on making PAI fully portable and fork-friendly. Your AI, yo
 - Live pulse charts, event timelines, and swim lanes
 - Multiple themes (Tokyo Night, Nord, Catppuccin, etc.)
 - Security obfuscation for sensitive data
-- Run with: `~/.claude/Observability/manage.sh start`
 
 **Genericized Agent Identity**
 - All agent references now use `process.env.DA || 'main'`
-- No more hardcoded names - your DA name flows through the entire system
+- No more hardcoded names — your DA name flows through the entire system
 - Observability dashboard shows your configured identity
-- Color system supports any DA name with intelligent defaults
 
 **Platform-Agnostic Configuration**
-- Added `_envDocs` to settings.json explaining all environment variables
 - Clear separation: `settings.json` for identity/paths, `.env` for API keys
-- `DA` (Digital Assistant name) - your AI's identity
-- `PAI_DIR` - root directory for all configuration
-- `TIME_ZONE` - configurable timezone for timestamps
-
-**Statusline Enhancements**
-- Terminal color compatibility mode for different terminal emulators
-- Dynamic CC version display
-- Cleaner greeting format
+- `DA` (Digital Assistant name) — your AI's identity
+- `PAI_DIR` — root directory for all configuration
+- `TIME_ZONE` — configurable timezone for timestamps
 
 **Skill System Improvements**
 - Canonical TitleCase file naming throughout
 - Standardized skill-workflow-notification script for dashboard detection
 - All paths use `${PAI_DIR}/` for location-agnostic installation
 
-### Previous Releases
+</details>
 
-**v0.7.0** - Research & Documentation
-- Comprehensive research skill with 10 workflows
-- Path standardization (${PAI_DIR}/)
-- PAI_CONTRACT.md defining core guarantees
-- Self-test validation system
+<details>
+<summary><strong>v0.8.0 (2025-11-25) — Research & Documentation</strong></summary>
 
-**v0.6.0 and earlier**
-- BrightData four-tier progressive web scraping
-- Art and story-explanation skills
-- Voice server with ElevenLabs integration
-- Hook system architecture
+<br/>
 
-For detailed changelogs, see the `CHANGELOG-*.md` files in the repository root.
+**Research Skill**
+- Comprehensive research skill with 10 specialized workflows
+- Multi-source research with parallel agent execution
+- Fabric pattern integration (242+ AI patterns)
 
----
+**Infrastructure**
+- Path standardization using `${PAI_DIR}/` throughout
+- `PAI_CONTRACT.md` defining core guarantees
+- Self-test validation system for health checks
+- Protection system for PAI-specific files
 
-## 📜 **License**
+</details>
 
-MIT License - see `LICENSE` file for details.
+<details>
+<summary><strong>v0.7.0 (2025-11-20) — Protection & Clarity</strong></summary>
 
----
+<br/>
 
-## 🙏 **Acknowledgments**
+**PAI Path Resolution System** (#112)
+- Centralized `pai-paths.ts` library — single source of truth
+- Smart detection with fallback to `~/.claude`
+- Updated 7 hooks to use centralized paths
 
-Built on [Claude Code](https://code.claude.com) by Anthropic.
+**PAI vs Kai Clarity** (#113)
+- `PAI_CONTRACT.md` — official contract defining boundaries
+- Self-test system (`bun ${PAI_DIR}/hooks/self-test.ts`)
+- Clear README section distinguishing PAI from Kai
 
-Inspired by the idea that AI systems need scaffolding to be reliable. This is that scaffolding.
+**Protection System**
+- `.pai-protected.json` manifest of protected files
+- `validate-protected.ts` script for pre-commit validation
+- Pre-commit hook template for automated checks
+
+</details>
+
+<details>
+<summary><strong>v0.6.5 (2025-11-18) — BrightData Integration</strong></summary>
+
+<br/>
+
+**Four-Tier Progressive Web Scraping**
+- Tier 1: WebFetch (free, built-in)
+- Tier 2: cURL with headers (free, more reliable)
+- Tier 3: Playwright (free, JavaScript rendering)
+- Tier 4: Bright Data MCP (paid, anti-bot bypass)
+
+</details>
+
+<details>
+<summary><strong>v0.6.0 (2025-11-15) — Major Architecture Update</strong></summary>
+
+<br/>
+
+**Repository Restructure**
+- Moved all configuration to `.claude/` directory
+- Skills-as-containers architecture
+- Three-tier progressive disclosure
+
+**Skills System**
+- Art skill with visual content generation
+- Story-explanation skill for narrative summaries
+- Create-skill and create-cli meta-skills
+
+**Hook System**
+- Comprehensive event capture system
+- Session summary and tool output capture
+- Tab title updates
+
+**Voice Integration**
+- Voice server with ElevenLabs TTS
+- Session start notifications
+
+</details>
+
+<details>
+<summary><strong>v0.5.0 and Earlier</strong></summary>
+
+<br/>
+
+**v0.5.0 — Foundation**
+- CORE skill as central context loader
+- Constitution defining system principles
+- CLI-First Architecture pattern
+- Initial skills: Fabric, FFUF, Alex Hormozi pitch
+
+**Pre-v0.5.0 — Early Development**
+- Initial repository setup
+- Basic settings.json structure
+- Agent personality definitions
+- Foundational hook experiments
+
+</details>
+
+<br/>
+
+## 📜 License
+
+MIT License — see [`LICENSE`](LICENSE) for details.
+
+<br/>
+
+## 🙏 Acknowledgments
+
+**Built on [Claude Code](https://code.claude.com) by Anthropic.**
+
+PAI is the technical foundation for [Human 3.0](https://human3.unsupervised-learning.com) — a program I created to help people transform into a version of themselves that can thrive in the post-corporate world that's coming. Human 3.0 means AI-augmented humans who build and control their own AI systems.
+
+Right now, the most sophisticated AI infrastructure exists inside corporations with massive engineering teams. PAI exists to change that. To give individuals the same scaffolding that companies spend millions building.
+
+Your AI, knowing how you work, learning from your patterns, serving your goals — not some corporation's engagement metrics. That's what this enables.
+
+<br/>
 
 ---
 
@@ -317,6 +473,8 @@ Inspired by the idea that AI systems need scaffolding to be reliable. This is th
 
 **Start clean. Start small. Build the AI infrastructure you need.**
 
-[⬆ Back to Top](#personal-ai-infrastructure-pai)
+<br/>
+
+[⬆ Back to Top](#personal-ai-infrastructure)
 
 </div>

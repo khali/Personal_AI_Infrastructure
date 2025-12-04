@@ -1,152 +1,170 @@
 # ValidateSkill Workflow
 
-**Purpose:** Audit an existing skill for compliance with SkillSystem.md canonical structure.
+**Purpose:** Check if an existing skill follows the canonical structure with proper TitleCase naming.
 
-## Prerequisites
+---
 
-**MANDATORY:** Read `${PAI_DIR}/skills/CORE/SkillSystem.md` for current standards.
+## Step 1: Read the Authoritative Source
 
-## Step 1: Identify Skill to Validate
+**REQUIRED FIRST:** Read the canonical structure:
 
-Get the skill name/path from user:
-- By name: "validate the Research skill"
-- By path: "validate ${PAI_DIR}/skills/Research"
+```
+${PAI_DIR}/skills/CORE/SkillSystem.md
+```
 
-## Step 2: Read Skill Files
+---
+
+## Step 2: Read the Target Skill
 
 ```bash
-# Find the skill directory
-ls ${PAI_DIR}/skills/ | grep -i [skillname]
-
-# Read the SKILL.md
-cat ${PAI_DIR}/skills/[SkillName]/SKILL.md
-
-# List workflows
-ls ${PAI_DIR}/skills/[SkillName]/workflows/
-
-# List tools
-ls ${PAI_DIR}/skills/[SkillName]/tools/
+${PAI_DIR}/skills/[SkillName]/SKILL.md
 ```
+
+---
 
 ## Step 3: Check TitleCase Naming
 
-Verify ALL naming uses TitleCase:
+### Skill Directory
+```bash
+ls ${PAI_DIR}/skills/ | grep -i [skillname]
+```
 
-**Skill Directory:**
-- [ ] `Research` not `research` or `research-skill`
+Verify TitleCase:
+- ✓ `Blogging`, `Daemon`, `CreateSkill`
+- ✗ `createskill`, `create-skill`, `CREATE_SKILL`
 
-**YAML name:**
-- [ ] `name: Research` not `name: research`
+### Workflow Files
+```bash
+ls ${PAI_DIR}/skills/[SkillName]/workflows/
+```
 
-**Workflow Files:**
-- [ ] `Conduct.md` not `conduct.md` or `conduct-research.md`
-- [ ] `ExtractAlpha.md` not `extract-alpha.md`
+Verify TitleCase:
+- ✓ `Create.md`, `UpdateDaemonInfo.md`, `SyncRepo.md`
+- ✗ `create.md`, `update-daemon-info.md`, `SYNC_REPO.md`
 
-**Tool Files:**
-- [ ] `SearchIndex.ts` not `search-index.ts`
+### Tool Files
+```bash
+ls ${PAI_DIR}/skills/[SkillName]/tools/
+```
 
-**Reference Docs:**
-- [ ] `ApiReference.md` not `api-reference.md`
+Verify TitleCase:
+- ✓ `ManageServer.ts`, `ManageServer.help.md`
+- ✗ `manage-server.ts`, `MANAGE_SERVER.ts`
+
+---
 
 ## Step 4: Check YAML Frontmatter
 
-Verify single-line description with USE WHEN:
+Verify the YAML has:
 
-**CORRECT:**
+### Single-Line Description with USE WHEN
 ```yaml
 ---
-name: Research
-description: Comprehensive research system. USE WHEN user says do research, analyze content, or extract insights. Supports multi-source parallel research.
+name: SkillName
+description: [What it does]. USE WHEN [intent triggers using OR]. [Additional capabilities].
 ---
 ```
 
-**INCORRECT:**
-```yaml
+**Check for violations:**
+- Multi-line description using `|` (WRONG)
+- Missing `USE WHEN` keyword (WRONG)
+- Separate `triggers:` array in YAML (OLD FORMAT - WRONG)
+- Separate `workflows:` array in YAML (OLD FORMAT - WRONG)
+- `name:` not in TitleCase (WRONG)
+
 ---
-name: research
-description: |
-  Comprehensive research system.
-  USE WHEN user says do research.
-triggers:
-  - do research
-  - analyze content
----
-```
 
-## Step 5: Check Required Sections
+## Step 5: Check Markdown Body
 
-Verify presence of mandatory sections:
+Verify the body has:
 
-**Workflow Routing:**
-- [ ] `## Workflow Routing` section exists
-- [ ] Table format with Workflow | Trigger | File columns
-- [ ] All workflows in workflows/ have routing entries
-- [ ] Notification script documentation present
-
-**Examples:**
-- [ ] `## Examples` section exists
-- [ ] 2-3 concrete examples present
-- [ ] Examples show input → behavior → output pattern
-
-## Step 6: Check Structure
-
-**Required:**
-- [ ] `SKILL.md` exists at skill root
-- [ ] `workflows/` directory exists
-- [ ] `tools/` directory exists (even if empty)
-
-**Prohibited:**
-- [ ] No `backups/` directory inside skill
-- [ ] No `.bak` files inside skill
-- [ ] No reference docs inside `workflows/` (should be at skill root)
-
-## Step 7: Generate Compliance Report
-
-Create a compliance report:
-
+### Workflow Routing Section
 ```markdown
-# Skill Compliance Report: [SkillName]
+## Workflow Routing
 
-## Status: [COMPLIANT / NON-COMPLIANT]
+**When executing a workflow, output this notification:**
 
-### TitleCase Naming
-- [x] Skill directory: PASS
-- [ ] YAML name: FAIL - uses lowercase
-- [ ] Workflow files: FAIL - 3 files use kebab-case
+```
+Running the **WorkflowName** workflow from the **SkillName** skill...
+```
+
+| Workflow | Trigger | File |
+|----------|---------|------|
+| **WorkflowOne** | "trigger phrase" | `workflows/WorkflowOne.md` |
+```
+
+**Check for violations:**
+- Missing `## Workflow Routing` section
+- Workflow names not in TitleCase
+- File paths not matching actual file names
+
+### Examples Section
+```markdown
+## Examples
+
+**Example 1: [Use case]**
+```
+User: "[Request]"
+→ [Action]
+→ [Result]
+```
+```
+
+**Check:** Examples section required (WRONG if missing)
+
+---
+
+## Step 6: Check Workflow Files
+
+```bash
+ls ${PAI_DIR}/skills/[SkillName]/workflows/
+```
+
+Verify:
+- Every file uses TitleCase naming
+- Every file has a corresponding entry in `## Workflow Routing` section
+- Every routing entry points to an existing file
+- Routing table names match file names exactly
+
+---
+
+## Step 7: Check Structure
+
+```bash
+ls -la ${PAI_DIR}/skills/[SkillName]/
+```
+
+Verify:
+- `tools/` directory exists (even if empty)
+- No `backups/` directory inside skill
+- Reference docs at skill root (not in workflows/)
+
+---
+
+## Step 8: Report Results
+
+**COMPLIANT** if all checks pass:
+
+### Naming (TitleCase)
+- [ ] Skill directory uses TitleCase
+- [ ] All workflow files use TitleCase
+- [ ] All reference docs use TitleCase
+- [ ] All tool files use TitleCase
+- [ ] Routing table names match file names
 
 ### YAML Frontmatter
-- [x] Single-line description: PASS
-- [x] Contains USE WHEN: PASS
-- [x] Under 1024 characters: PASS
+- [ ] `name:` uses TitleCase
+- [ ] `description:` is single-line with `USE WHEN`
+- [ ] No separate `triggers:` or `workflows:` arrays
+- [ ] Description under 1024 characters
 
-### Required Sections
-- [x] Workflow Routing: PASS
-- [ ] Examples: FAIL - section missing
+### Markdown Body
+- [ ] `## Workflow Routing` section present
+- [ ] `## Examples` section with 2-3 patterns
+- [ ] All workflows have routing entries
 
 ### Structure
-- [x] SKILL.md exists: PASS
-- [x] workflows/ exists: PASS
-- [x] tools/ exists: PASS
-- [ ] No backups/ inside: FAIL - found backups/
+- [ ] `tools/` directory exists
+- [ ] No `backups/` inside skill
 
-## Fixes Required
-1. Rename YAML `name: research` → `name: Research`
-2. Rename workflow files to TitleCase
-3. Add `## Examples` section with 2-3 patterns
-4. Move backups/ to ${PAI_DIR}/history/backups/
-
-## Recommendation
-Run CanonicalizeSkill workflow to fix all issues.
-```
-
-## Outputs
-
-- Detailed compliance report
-- Specific list of fixes needed
-- Recommendation for next steps
-
-## Related Workflows
-
-- `CanonicalizeSkill.md` - Fix all compliance issues
-- `UpdateSkill.md` - Add missing components
-- `CreateSkill.md` - Reference for correct structure
+**NON-COMPLIANT** if any check fails. Recommend using CanonicalizeSkill workflow.

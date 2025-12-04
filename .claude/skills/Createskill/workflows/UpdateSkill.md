@@ -1,154 +1,125 @@
 # UpdateSkill Workflow
 
-**Purpose:** Add workflows, tools, or documentation to an existing skill while maintaining compliance.
+**Purpose:** Add workflows or modify an existing skill while maintaining canonical structure and TitleCase naming.
 
-## Prerequisites
+---
 
-**MANDATORY:** Read `${PAI_DIR}/skills/CORE/SkillSystem.md` for current standards.
-**VERIFY:** Skill is already compliant (run ValidateSkill first if unsure).
+## Step 1: Read the Authoritative Source
 
-## Step 1: Identify What to Update
+**REQUIRED FIRST:** Read the canonical structure:
 
-Clarify with user:
-- **Add workflow?** New execution procedure
-- **Add tool?** New CLI automation
-- **Add documentation?** New reference doc
-- **Update SKILL.md?** Change description, add triggers
+```
+${PAI_DIR}/skills/CORE/SkillSystem.md
+```
 
-## Adding a New Workflow
+---
 
-### Step 2a: Create Workflow File (TitleCase)
+## Step 2: Read the Current Skill
 
+```bash
+${PAI_DIR}/skills/[SkillName]/SKILL.md
+```
+
+Understand the current:
+- Description (single-line with USE WHEN)
+- Workflow routing (in markdown body)
+- Existing TitleCase naming
+
+---
+
+## Step 3: Understand the Update
+
+What needs to change?
+- Adding a new workflow?
+- Modifying the description/triggers?
+- Updating documentation?
+
+---
+
+## Step 4: Make Changes
+
+### To Add a New Workflow:
+
+1. **Determine TitleCase name:**
+   - ✓ `Create.md`, `UpdateDaemonInfo.md`, `SyncRepo.md`
+   - ✗ `create.md`, `update-daemon-info.md`, `SYNC_REPO.md`
+
+2. **Create the workflow file:**
 ```bash
 touch ${PAI_DIR}/skills/[SkillName]/workflows/[WorkflowName].md
 ```
 
-**Example:**
+Example:
 ```bash
-touch ${PAI_DIR}/skills/DockerManager/workflows/RestartContainer.md
+touch ${PAI_DIR}/skills/Daemon/workflows/UpdatePublicRepo.md
 ```
 
-### Step 3a: Write Workflow Content
-
-Use standard workflow format:
-
+3. **Add entry to `## Workflow Routing` section in SKILL.md:**
 ```markdown
-# [WorkflowName] Workflow
+## Workflow Routing
 
-**Purpose:** [One-line description]
-
-## Prerequisites
-
-[What must exist/be true before running]
-
-## Steps
-
-1. [First action]
-2. [Second action]
-3. [Third action]
-
-## Outputs
-
-[What this workflow produces]
-
-## Related Workflows
-
-- `OtherWorkflow.md` - [Relationship]
-```
-
-### Step 4a: Update SKILL.md Routing Table
-
-Add new workflow to the routing table:
-
-```markdown
 | Workflow | Trigger | File |
 |----------|---------|------|
 | **ExistingWorkflow** | "existing trigger" | `workflows/ExistingWorkflow.md` |
-| **NewWorkflow** | "new trigger" | `workflows/NewWorkflow.md` |  ← ADD THIS
+| **NewWorkflow** | "new trigger" | `workflows/NewWorkflow.md` |
 ```
 
-## Adding a New Tool
+4. **Write the workflow content**
 
-### Step 2b: Create Tool File (TitleCase)
+### To Update Triggers:
+
+Modify the single-line `description` in YAML frontmatter:
+```yaml
+description: [What it does]. USE WHEN [updated intent triggers using OR]. [Capabilities].
+```
+
+### To Add a Tool:
+
+1. **Create TitleCase tool file:**
+```bash
+touch ${PAI_DIR}/skills/[SkillName]/tools/ToolName.ts
+touch ${PAI_DIR}/skills/[SkillName]/tools/ToolName.help.md
+```
+
+2. **Ensure tools/ directory exists:**
+```bash
+mkdir -p ${PAI_DIR}/skills/[SkillName]/tools
+```
+
+---
+
+## Step 5: Verify TitleCase
+
+After making changes, verify naming:
 
 ```bash
-touch ${PAI_DIR}/skills/[SkillName]/tools/[ToolName].ts
-touch ${PAI_DIR}/skills/[SkillName]/tools/[ToolName].help.md
-```
-
-### Step 3b: Write Tool with Standard Header
-
-```typescript
-#!/usr/bin/env bun
-/**
- * [ToolName].ts - [Brief description]
- *
- * Usage:
- *   bun ${PAI_DIR}/skills/[SkillName]/tools/[ToolName].ts <command> [options]
- *
- * Commands:
- *   start     [Description]
- *   stop      [Description]
- *   status    [Description]
- *
- * @author PAI System
- * @version 1.0.0
- */
-```
-
-### Step 4b: Create Help Documentation
-
-Create `[ToolName].help.md` with full documentation.
-
-## Adding Reference Documentation
-
-### Step 2c: Create Doc at Skill Root (TitleCase)
-
-Reference docs go at skill root, NOT in workflows/:
-
-```bash
-touch ${PAI_DIR}/skills/[SkillName]/[DocName].md
-```
-
-**Example:**
-```bash
-touch ${PAI_DIR}/skills/DockerManager/ContainerConfig.md
-```
-
-## Verification
-
-After any update:
-
-### Verify Naming
-```bash
-ls ${PAI_DIR}/skills/[SkillName]/
 ls ${PAI_DIR}/skills/[SkillName]/workflows/
 ls ${PAI_DIR}/skills/[SkillName]/tools/
 ```
 
-All files should be TitleCase.
+All files must use TitleCase:
+- ✓ `WorkflowName.md`
+- ✓ `ToolName.ts`, `ToolName.help.md`
+- ✗ `workflow-name.md`, `tool_name.ts`
 
-### Verify Routing
-Check that SKILL.md has routing entries for all workflows:
+---
 
-```bash
-# Count workflows
-ls ${PAI_DIR}/skills/[SkillName]/workflows/*.md | wc -l
+## Step 6: Final Checklist
 
-# Should match count of routing table rows
-```
+### Naming
+- [ ] New workflow files use TitleCase
+- [ ] New tool files use TitleCase
+- [ ] Routing table names match file names exactly
 
-### Verify Examples
-If significantly new functionality was added, consider adding another example to the Examples section.
+### Structure
+- [ ] YAML still has single-line description with USE WHEN
+- [ ] No separate `triggers:` or `workflows:` arrays in YAML
+- [ ] Markdown body has `## Workflow Routing` section
+- [ ] All routes point to existing files
+- [ ] New workflow files have routing entries
 
-## Outputs
+---
 
-- New workflow/tool/doc file created
-- SKILL.md updated with routing (if workflow added)
-- Structure maintains compliance
+## Done
 
-## Related Workflows
-
-- `ValidateSkill.md` - Verify compliance after update
-- `CanonicalizeSkill.md` - If update breaks compliance
-- `CreateSkill.md` - Reference for standard structure
+Skill updated while maintaining canonical structure and TitleCase naming.

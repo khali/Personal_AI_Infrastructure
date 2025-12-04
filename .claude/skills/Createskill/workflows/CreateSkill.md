@@ -1,64 +1,70 @@
 # CreateSkill Workflow
 
-**Purpose:** Create a new PAI skill following canonical structure from SkillSystem.md.
+Create a new skill following the canonical structure with proper TitleCase naming.
 
-## Prerequisites
+## Step 1: Read the Authoritative Sources
 
-**MANDATORY:** Read `${PAI_DIR}/skills/CORE/SkillSystem.md` before proceeding.
-**REFERENCE:** Read `${PAI_DIR}/skills/Blogging/SKILL.md` as a compliant example.
+**REQUIRED FIRST:**
 
-## Step 1: Define Skill Purpose
+1. Read the skill system documentation: `${PAI_DIR}/skills/CORE/SkillSystem.md`
+2. Read the canonical example: `${PAI_DIR}/skills/Blogging/SKILL.md`
 
-Ask the user to clarify:
-- **What does this skill do?** (Core capability)
-- **When should it activate?** (Trigger patterns)
-- **What workflows does it need?** (Count and categories)
-- **What tools does it need?** (CLI automation)
+## Step 2: Understand the Request
 
-## Step 2: Choose Skill Name (TitleCase)
+Ask the user:
+1. What does this skill do?
+2. What should trigger it?
+3. What workflows does it need?
 
-**TitleCase naming is MANDATORY.**
+## Step 3: Determine TitleCase Names
 
-| Bad | Good |
-|-----|------|
-| `docker-manager` | `DockerManager` |
-| `dockermanager` | `DockerManager` |
-| `DOCKER_MANAGER` | `DockerManager` |
+**All names must use TitleCase (PascalCase).**
 
-## Step 3: Create Directory Structure
+| Component | Format | Example |
+|-----------|--------|---------|
+| Skill directory | TitleCase | `Blogging`, `Daemon`, `CreateSkill` |
+| Workflow files | TitleCase.md | `Create.md`, `UpdateDaemonInfo.md` |
+| Reference docs | TitleCase.md | `ProsodyGuide.md`, `ApiReference.md` |
+| Tool files | TitleCase.ts | `ManageServer.ts` |
+| Help files | TitleCase.help.md | `ManageServer.help.md` |
+
+**Wrong naming (NEVER use):**
+- `create-skill`, `create_skill`, `CREATESKILL` → Use `CreateSkill`
+- `create.md`, `CREATE.md`, `create-info.md` → Use `Create.md`, `CreateInfo.md`
+
+## Step 4: Create the Skill Directory
 
 ```bash
-# Create directories
 mkdir -p ${PAI_DIR}/skills/[SkillName]/workflows
 mkdir -p ${PAI_DIR}/skills/[SkillName]/tools
 ```
 
 **Example:**
 ```bash
-mkdir -p ${PAI_DIR}/skills/DockerManager/workflows
-mkdir -p ${PAI_DIR}/skills/DockerManager/tools
+mkdir -p ${PAI_DIR}/skills/Daemon/workflows
+mkdir -p ${PAI_DIR}/skills/Daemon/tools
 ```
 
-## Step 4: Create SKILL.md
+## Step 5: Create SKILL.md
 
-Create `${PAI_DIR}/skills/[SkillName]/SKILL.md` with this structure:
+Follow this exact structure:
 
-```markdown
+```yaml
 ---
-name: [SkillName]
+name: SkillName
 description: [What it does]. USE WHEN [intent triggers using OR]. [Additional capabilities].
 ---
 
-# [SkillName]
+# SkillName
 
 [Brief description]
 
 ## Workflow Routing
 
-**When executing a workflow, call the notification script via Bash:**
+**When executing a workflow, output this notification:**
 
-```bash
-${PAI_DIR}/tools/skill-workflow-notification WorkflowName [SkillName]
+```
+Running the **WorkflowName** workflow from the **SkillName** skill...
 ```
 
 | Workflow | Trigger | File |
@@ -70,91 +76,80 @@ ${PAI_DIR}/tools/skill-workflow-notification WorkflowName [SkillName]
 
 **Example 1: [Common use case]**
 ```
-User: "[Typical request]"
+User: "[Typical user request]"
 → Invokes WorkflowOne workflow
-→ [What happens]
-→ [What user gets]
+→ [What skill does]
+→ [What user gets back]
 ```
 
 **Example 2: [Another use case]**
 ```
-User: "[Another request]"
+User: "[Different request]"
 → [Process]
 → [Output]
 ```
 
-## [Additional sections as needed]
+## [Additional Documentation]
+
+[Any other relevant info]
 ```
 
-## Step 5: Create Workflow Files (TitleCase)
+## Step 6: Create Workflow Files
 
-Create each workflow file in `workflows/` directory:
+For each workflow in the routing section:
 
 ```bash
 touch ${PAI_DIR}/skills/[SkillName]/workflows/[WorkflowName].md
 ```
 
-**Example:**
+**Examples (TitleCase):**
 ```bash
-touch ${PAI_DIR}/skills/DockerManager/workflows/StartContainer.md
-touch ${PAI_DIR}/skills/DockerManager/workflows/StopContainer.md
-touch ${PAI_DIR}/skills/DockerManager/workflows/ListContainers.md
+touch ${PAI_DIR}/skills/Daemon/workflows/UpdateDaemonInfo.md
+touch ${PAI_DIR}/skills/Daemon/workflows/UpdatePublicRepo.md
+touch ${PAI_DIR}/skills/Blogging/workflows/Create.md
+touch ${PAI_DIR}/skills/Blogging/workflows/Publish.md
 ```
 
-## Step 6: Verify Structure
+## Step 7: Verify TitleCase
 
-Check the final structure:
-
+Run this check:
 ```bash
 ls ${PAI_DIR}/skills/[SkillName]/
 ls ${PAI_DIR}/skills/[SkillName]/workflows/
 ls ${PAI_DIR}/skills/[SkillName]/tools/
 ```
 
-Expected output:
-```
-SKILL.md
-workflows/
-tools/
+Verify ALL files use TitleCase:
+- `SKILL.md` ✓ (exception - always uppercase)
+- `WorkflowName.md` ✓
+- `ToolName.ts` ✓
+- `ToolName.help.md` ✓
 
-workflows/
-WorkflowOne.md
-WorkflowTwo.md
+## Step 8: Final Checklist
 
-tools/
-(empty or ToolName.ts files)
-```
+### Naming (TitleCase)
+- [ ] Skill directory uses TitleCase (e.g., `Blogging`, `Daemon`)
+- [ ] All workflow files use TitleCase (e.g., `Create.md`, `UpdateInfo.md`)
+- [ ] All reference docs use TitleCase (e.g., `ProsodyGuide.md`)
+- [ ] All tool files use TitleCase (e.g., `ManageServer.ts`)
+- [ ] Routing table workflow names match file names exactly
 
-## Step 7: Validate Against Checklist
+### YAML Frontmatter
+- [ ] `name:` uses TitleCase
+- [ ] `description:` is single-line with embedded `USE WHEN` clause
+- [ ] No separate `triggers:` or `workflows:` arrays
+- [ ] Description uses intent-based language
+- [ ] Description is under 1024 characters
 
-**Naming (TitleCase):**
-- [ ] Skill directory uses TitleCase
-- [ ] All workflow files use TitleCase
-- [ ] YAML `name:` uses TitleCase
+### Markdown Body
+- [ ] `## Workflow Routing` section with table format
+- [ ] All workflow files have routing entries
+- [ ] `## Examples` section with 2-3 concrete usage patterns
 
-**YAML Frontmatter:**
-- [ ] Single-line description
-- [ ] Contains `USE WHEN` clause
-- [ ] Under 1024 characters
-
-**Markdown Body:**
-- [ ] `## Workflow Routing` section with table
-- [ ] `## Examples` section with 2-3 patterns
-- [ ] All workflows have routing entries
-
-**Structure:**
-- [ ] `tools/` directory exists
+### Structure
+- [ ] `tools/` directory exists (even if empty)
 - [ ] No `backups/` directory inside skill
 
-## Outputs
+## Done
 
-- Complete skill directory at `${PAI_DIR}/skills/[SkillName]/`
-- SKILL.md following canonical structure
-- Workflow files for each capability
-- Empty tools/ directory ready for automation
-
-## Related Workflows
-
-- `ValidateSkill.md` - Check compliance after creation
-- `UpdateSkill.md` - Add workflows or tools later
-- `CanonicalizeSkill.md` - If existing skill needs restructuring
+Skill created following canonical structure with proper TitleCase naming throughout.

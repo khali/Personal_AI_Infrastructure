@@ -1,245 +1,247 @@
 # CanonicalizeSkill Workflow
 
-**Purpose:** Restructure an existing skill to match the canonical structure in SkillSystem.md.
+**Purpose:** Restructure an existing skill to match the canonical format with proper naming conventions.
 
-## Prerequisites
+---
 
-**MANDATORY:** Read `${PAI_DIR}/skills/CORE/SkillSystem.md` for current standards.
+## Step 1: Read the Authoritative Source
 
-## What is Canonicalization?
+**REQUIRED FIRST:** Read the canonical structure:
 
-Canonicalization means restructuring a skill to match the EXACT format specified in SkillSystem.md, including:
-
-1. **TitleCase naming** for all files and directories
-2. **Single-line USE WHEN description** in YAML
-3. **Required Examples section** with 2-3 patterns
-4. **Proper structure** (workflows/, tools/, no backups inside)
-5. **Workflow routing table** format
-
-## Step 1: Analyze Current Skill
-
-Read the current skill structure:
-
-```bash
-# Read the skill
-cat ${PAI_DIR}/skills/[skill-name]/SKILL.md
-
-# List all files
-find ${PAI_DIR}/skills/[skill-name] -type f
-
-# Check for backups inside
-ls ${PAI_DIR}/skills/[skill-name]/backups/ 2>/dev/null
+```
+${PAI_DIR}/skills/CORE/SkillSystem.md
 ```
 
-## Step 2: Create Backup
+This defines exactly what "canonicalize" means.
 
-**CRITICAL:** Backup to history/backups/, NOT inside the skill:
+---
+
+## Step 2: Read the Current Skill
 
 ```bash
-cp -r ${PAI_DIR}/skills/[skill-name]/ ${PAI_DIR}/history/backups/[skill-name]-backup-$(date +%Y%m%d-%H%M%S)/
+${PAI_DIR}/skills/[skill-name]/SKILL.md
 ```
 
-## Step 3: Rename to TitleCase
+Identify what's wrong:
+- Multi-line description using `|`?
+- Separate `triggers:` array in YAML? (OLD FORMAT)
+- Separate `workflows:` array in YAML? (OLD FORMAT)
+- Missing `USE WHEN` in description?
+- Workflow routing missing from markdown body?
+- **Workflow files not using TitleCase?**
+- **Skill directory not using TitleCase?**
 
-### Rename Directory (if needed)
+---
+
+## Step 3: Backup
 
 ```bash
-# Example: blogging → Blogging
-mv ${PAI_DIR}/skills/blogging ${PAI_DIR}/skills/Blogging
+cp -r ${PAI_DIR}/skills/[skill-name]/ ${PAI_DIR}/history/backups/[skill-name]-backup-$(date +%Y%m%d)/
 ```
 
-### Rename Workflow Files
+**Note:** Backups go to `${PAI_DIR}/history/backups/`, NEVER inside skill directories.
 
+---
+
+## Step 4: Enforce TitleCase Naming
+
+**CRITICAL: All naming must use TitleCase (PascalCase).**
+
+### Skill Directory Name
+```
+✗ WRONG: createskill, create-skill, create_skill, CREATESKILL
+✓ CORRECT: Createskill (or CreateSkill for multi-word)
+```
+
+### Workflow File Names
+```
+✗ WRONG: create.md, CREATE.md, create-skill.md, create_skill.md
+✓ CORRECT: Create.md, UpdateDaemonInfo.md, SyncRepo.md
+```
+
+### Reference Doc Names
+```
+✗ WRONG: prosody-guide.md, PROSODY_GUIDE.md
+✓ CORRECT: ProsodyGuide.md, SchemaSpec.md, ApiReference.md
+```
+
+### Tool Names
+```
+✗ WRONG: manage-server.ts, MANAGE_SERVER.ts
+✓ CORRECT: ManageServer.ts (with ManageServer.help.md)
+```
+
+**Rename files if needed:**
 ```bash
+# Example: rename workflow files
 cd ${PAI_DIR}/skills/[SkillName]/workflows/
-
-# Example renames:
-# create.md → Create.md
-# update-info.md → UpdateInfo.md
-# sync-repo.md → SyncRepo.md
+mv create.md Create.md
+mv update-info.md UpdateInfo.md
+mv sync_repo.md SyncRepo.md
 ```
 
-### Rename Tool Files
+---
 
-```bash
-cd ${PAI_DIR}/skills/[SkillName]/tools/
+## Step 5: Convert YAML Frontmatter
 
-# Example renames:
-# manage-server.ts → ManageServer.ts
-# manage-server.help.md → ManageServer.help.md
-```
-
-### Rename Reference Docs
-
-```bash
-cd ${PAI_DIR}/skills/[SkillName]/
-
-# Example renames:
-# prosody-guide.md → ProsodyGuide.md
-# api-reference.md → ApiReference.md
-```
-
-## Step 4: Update YAML Frontmatter
-
-Convert multi-line description to single-line with USE WHEN:
-
-**BEFORE:**
+**From old format (WRONG):**
 ```yaml
 ---
-name: blogging
+name: skill-name
 description: |
-  Complete blog workflow for your site.
+  What the skill does.
 
-  USE WHEN user mentions blog, website, etc.
 triggers:
-  - write a post
-  - publish blog
+  - USE WHEN user mentions X
+  - USE WHEN user wants to Y
+
 workflows:
-  - create.md
-  - publish.md
+  - USE WHEN user wants to A: workflows/a.md
+  - USE WHEN user wants to B: workflows/b.md
 ---
 ```
 
-**AFTER:**
+**To new format (CORRECT):**
 ```yaml
 ---
-name: Blogging
-description: Complete blog workflow for your site. USE WHEN user mentions doing anything with their blog, website, site, including things like update, proofread, write, edit, publish, preview, blog posts, articles, headers, or website pages, etc.
+name: SkillName
+description: What the skill does. USE WHEN user mentions X OR user wants to Y. Additional capabilities.
 ---
 ```
 
-## Step 5: Update Workflow Routing Section
+**Key changes:**
+- Skill name in TitleCase
+- Combine description + triggers into single-line `description` with `USE WHEN`
+- Remove `triggers:` array entirely
+- Remove `workflows:` array from YAML (moves to body)
 
-Convert to table format:
+---
 
-**BEFORE:**
+## Step 6: Add Workflow Routing to Body
+
+Add `## Workflow Routing` section in markdown body:
+
 ```markdown
-## Workflows
+# SkillName
 
-- `create.md` - Create new blog post
-- `publish.md` - Publish to production
-```
+[Description]
 
-**AFTER:**
-```markdown
 ## Workflow Routing
 
-**When executing a workflow, call the notification script via Bash:**
+**When executing a workflow, output this notification:**
 
-```bash
-${PAI_DIR}/tools/skill-workflow-notification WorkflowName Blogging
+```
+Running the **WorkflowName** workflow from the **SkillName** skill...
 ```
 
 | Workflow | Trigger | File |
 |----------|---------|------|
-| **Create** | "write a post", "new article" | `workflows/Create.md` |
-| **Publish** | "publish", "deploy" | `workflows/Publish.md` |
+| **WorkflowOne** | "trigger phrase one" | `workflows/WorkflowOne.md` |
+| **WorkflowTwo** | "trigger phrase two" | `workflows/WorkflowTwo.md` |
+
+## Examples
+
+[Required examples section]
+
+## [Rest of documentation]
 ```
 
-## Step 6: Add Examples Section
+**Note:** Workflow names in routing table must match file names exactly (TitleCase).
 
-Add or update the Examples section:
+---
+
+## Step 7: Remove Redundant Routing
+
+If the markdown body already had routing information in a different format, consolidate it into the standard `## Workflow Routing` section. Delete any duplicate routing tables or sections.
+
+---
+
+## Step 8: Ensure All Workflows Are Routed
+
+List workflow files:
+```bash
+ls ${PAI_DIR}/skills/[SkillName]/workflows/
+```
+
+For EACH file:
+1. Verify TitleCase naming (rename if needed)
+2. Ensure there's a routing entry in `## Workflow Routing`
+3. Verify routing entry matches exact file name
+
+---
+
+## Step 9: Add Examples Section
+
+**REQUIRED:** Every skill needs an `## Examples` section with 2-3 concrete usage patterns.
 
 ```markdown
 ## Examples
 
-**Example 1: Create new content**
+**Example 1: [Common use case]**
 ```
-User: "Write a blog post about AI agents"
-→ Invokes Create workflow
-→ Drafts content in scratchpad/
-→ Opens dev server for preview
-```
-
-**Example 2: Publish to production**
-```
-User: "Publish the AI agents post"
-→ Invokes Publish workflow
-→ Runs build validation
-→ Deploys to production
-```
+User: "[Typical user request]"
+→ Invokes WorkflowName workflow
+→ [What skill does]
+→ [What user gets back]
 ```
 
-## Step 7: Move Backups Out
-
-If skill has internal backups, move them:
-
-```bash
-# Move backups directory to history
-mv ${PAI_DIR}/skills/[SkillName]/backups/* ${PAI_DIR}/history/backups/
-
-# Remove empty backups directory
-rmdir ${PAI_DIR}/skills/[SkillName]/backups/
-
-# Remove any .bak files
-find ${PAI_DIR}/skills/[SkillName] -name "*.bak" -exec mv {} ${PAI_DIR}/history/backups/ \;
+**Example 2: [Another use case]**
+```
+User: "[Different request]"
+→ [Process]
+→ [Output]
+```
 ```
 
-## Step 8: Ensure tools/ Directory Exists
+Place the Examples section after Workflow Routing.
 
-```bash
-mkdir -p ${PAI_DIR}/skills/[SkillName]/tools
-```
+---
 
-## Step 9: Verify Final Structure
+## Step 10: Verify
 
-```bash
-# Check directory listing
-ls ${PAI_DIR}/skills/[SkillName]/workflows/
-
-# All files should be TitleCase
-# Example output:
-# Create.md
-# Publish.md
-# Header.md
-```
-
-## Step 10: Run Validation
-
-Run ValidateSkill workflow to confirm compliance:
-
-```bash
-# All checks should pass
-```
-
-## Canonicalization Checklist
-
-**Before declaring canonicalization complete:**
+Run checklist:
 
 ### Naming (TitleCase)
-- [ ] Skill directory uses TitleCase
-- [ ] All workflow files use TitleCase
-- [ ] All reference docs use TitleCase
-- [ ] All tool files use TitleCase
-- [ ] YAML `name:` uses TitleCase
+- [ ] Skill directory uses TitleCase (e.g., `Blogging`, `Createskill`)
+- [ ] All workflow files use TitleCase (e.g., `Create.md`, `UpdateInfo.md`)
+- [ ] All reference docs use TitleCase (e.g., `ProsodyGuide.md`)
+- [ ] All tool files use TitleCase (e.g., `ManageServer.ts`)
+- [ ] Routing table workflow names match file names exactly
 
 ### YAML Frontmatter
-- [ ] Single-line description
-- [ ] Contains `USE WHEN` clause
-- [ ] No separate `triggers:` or `workflows:` arrays
-- [ ] Under 1024 characters
+- [ ] `name:` uses TitleCase
+- [ ] `description:` is single-line with embedded `USE WHEN` clause
+- [ ] No separate `triggers:` or `workflows:` arrays in YAML
+- [ ] Description uses intent-based language
+- [ ] Description is under 1024 characters
 
 ### Markdown Body
-- [ ] `## Workflow Routing` section with table format
-- [ ] All workflows have routing entries
-- [ ] `## Examples` section with 2-3 patterns
+- [ ] `## Workflow Routing` section present
+- [ ] Routing uses table format with Workflow, Trigger, File columns
+- [ ] All workflow files have routing entries
+- [ ] `## Examples` section with 2-3 concrete usage patterns
 
 ### Structure
-- [ ] `tools/` directory exists
+- [ ] `tools/` directory exists (even if empty)
+- [ ] Workflows contain ONLY work execution procedures
+- [ ] Reference docs live at skill root (not in workflows/)
 - [ ] No `backups/` directory inside skill
-- [ ] No `.bak` files inside skill
-- [ ] Reference docs at skill root (not in workflows/)
-- [ ] Workflows contain ONLY execution procedures
 
-## Outputs
+---
 
-- Fully canonicalized skill structure
-- Backup preserved in history/backups/
-- All naming in TitleCase
-- Compliant YAML and markdown structure
+## TitleCase Reference
 
-## Related Workflows
+| Type | Wrong | Correct |
+|------|-------|---------|
+| Skill directory | `createskill`, `create-skill` | `Createskill` |
+| Multi-word skill | `create_skill`, `CREATE_SKILL` | `CreateSkill` |
+| Workflow file | `create.md`, `CREATE.md` | `Create.md` |
+| Multi-word workflow | `update-info.md`, `UPDATE_INFO.md` | `UpdateInfo.md` |
+| Reference doc | `api-reference.md` | `ApiReference.md` |
+| Tool file | `manage-server.ts` | `ManageServer.ts` |
 
-- `ValidateSkill.md` - Verify compliance after canonicalization
-- `CreateSkill.md` - Reference for correct structure
-- `UpdateSkill.md` - Add components after canonicalization
+---
+
+## Done
+
+Skill now matches the canonical structure from SkillSystem.md with proper TitleCase naming throughout.
