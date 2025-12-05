@@ -1,5 +1,5 @@
 ---
-name: by:update-instruction
+name: vai:update-instruction
 description: Analyze and update agent instructions based on behavior that needs correcting or improving. USE WHEN you want to improve how I handle a specific situation, fix a behavioral pattern, or capture a new workflow. Launches the instruction-updater sub-agent.
 argument-hint: [problem description or desired behavior]
 allowed-tools: Task, Read, Grep, Glob, Bash
