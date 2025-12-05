@@ -1,10 +1,10 @@
 ---
 skill-name: setup-instruction-updater
-version: 1.0
+version: 2.0
 created: 2025-12-05
 last-updated: 2025-12-05
 status: active
-purpose: Bootstrap instruction-updater infrastructure in new projects
+purpose: Bootstrap instruction-updater project components (skill + slash command)
 context: general-purpose
 tags: [meta, setup, bootstrap, instructions, infrastructure]
 ---
@@ -13,25 +13,12 @@ tags: [meta, setup, bootstrap, instructions, infrastructure]
 
 ## Purpose
 
-This skill helps you set up the complete instruction-updater system in new projects. It creates:
-1. **Agent definition** - The instruction-updater sub-agent (user-level or project-level)
-2. **Skill definition** - Recognition skill for when to trigger the agent
-3. **Slash command** - `/vai:update-instruction` or custom-prefixed command
-4. **Session hooks** (optional) - Auto-load operational protocols if needed
+This skill helps you set up the instruction-updater system in new projects. Since the **agent is already user-level** (`~/.claude/agents/instruction-updater.md`) and shared across all projects, you only need to create:
 
----
+1. **Skill definition** - Recognition skill for when to trigger the agent (optional)
+2. **Slash command** - `/vai:update-instruction` or custom-prefixed command
 
-## When to Use This Skill
-
-**Trigger scenarios:**
-1. ✅ Setting up a new AI-assisted project
-2. ✅ Adding instruction management to existing project
-3. ✅ Creating project-specific instruction-updater infrastructure
-4. ✅ Bootstrapping Vai-like capabilities in other contexts
-
-**When NOT to use:**
-- ❌ Just updating existing instructions (use `/vai:update-instruction` instead)
-- ❌ The infrastructure already exists in the project
+That's it. The agent is already available.
 
 ---
 
@@ -39,246 +26,136 @@ This skill helps you set up the complete instruction-updater system in new proje
 
 <infrastructure-components>
 
-### 1. Instruction-Updater Agent
-**Location:** `~/.claude/agents/instruction-updater.md` (user-level) OR `.claude/agents/instruction-updater.md` (project-level)
+### 1. Instruction-Updater Agent ✅ ALREADY EXISTS
 
-**Purpose:** Specialist sub-agent that analyzes instruction updates, checks duplication/conflicts, proposes consolidation
+**Location:** `~/.claude/agents/instruction-updater.md` (user-level)
 
-**Capabilities:**
-- Analyzes existing instructions
-- Checks for duplication across files
-- Identifies conflicts and proposes trade-off framing
-- Ensures behavioral specificity
-- Makes educated guesses before asking questions
-- Proposes consolidated updates
+**Status:** Already created and shared across ALL projects automatically.
 
-### 2. Skill Definition
-**Location:** `.claude/skills/update-agent-instructions/SKILL.md` (or custom path)
+**You don't need to do anything** - the agent is available to all projects.
+
+### 2. Skill Definition (Optional)
+
+**Location:** `.claude/skills/update-agent-instructions/SKILL.md`
 
 **Purpose:** Recognition skill that knows when to launch the instruction-updater sub-agent
 
-**Capabilities:**
-- Recognizes trigger patterns (mistakes, corrections, new workflows)
-- Gathers relevant context before launching agent
-- Provides template for agent invocation
-- Manages approval workflow
+**When to create:**
+- ✅ If you want automatic trigger recognition (mistakes, corrections, patterns)
+- ❌ If you'll just use the slash command manually
 
 ### 3. Slash Command
+
 **Location:** `.claude/commands/vai:update-instruction.md` (or custom prefix)
 
 **Purpose:** Quick access to instruction-update workflow
 
 **Usage:** `/vai:update-instruction [problem description]`
 
-### 4. Session Start Hook (Optional)
-**Location:** `.claude/hooks/load-core-context.ts` (or similar)
-
-**Purpose:** Auto-load operational protocols at session start
+**Always create this** - it's the primary interface.
 
 </infrastructure-components>
 
 ---
 
-## Setup Workflow
+## Quick Setup
 
-<workflow name="bootstrap-instruction-updater">
+<quick-setup>
 
-### Step 1: Gather Project Context
+**For most projects, just create the slash command:**
 
-**Questions to answer:**
-1. What is the project name/context? (e.g., "Vai", "ProjectX", "MyApp")
-2. Where should the agent live?
-   - User-level (`~/.claude/agents/`) - shared across all projects
-   - Project-level (`.claude/agents/`) - project-specific
-3. What prefix for slash command? (e.g., `vai:`, `project:`, or none)
-4. Where are instruction files stored?
-   - Standard: `.claude/` directory
-   - Custom: specify path (e.g., `/workspace/khali-obsidian-vault/ai-context/vai/`)
-5. Should operational protocols auto-load at session start? (yes/no)
+```bash
+# 1. Copy slash command template
+cp /workspace/PAI/.claude/commands/vai:update-instruction.md \
+   .claude/commands/vai:update-instruction.md
 
-### Step 2: Create Agent Definition
+# 2. Customize if needed (optional)
+# - Change prefix: vai: → project:
+# - Update instruction file paths if non-standard
 
-**Source template:** `/home/devuser/.claude/agents/instruction-updater.md`
+# 3. Done! Test it:
+/vai:update-instruction test setup
+```
 
-**Customizations:**
-- Update role name if project-specific (e.g., "ProjectX Instruction Updater")
-- Update instruction file paths if custom location
-- Keep core logic identical (analysis, educated guessing, etc.)
+**That's it.** The agent is already user-level, so you're ready to go.
+
+</quick-setup>
+
+---
+
+## Detailed Setup (Optional Components)
+
+<workflow name="full-setup">
+
+### Step 1: Create Slash Command (Required)
+
+**Source:** `/workspace/PAI/.claude/commands/vai:update-instruction.md`
 
 **Actions:**
 ```bash
-# User-level (shared across projects)
-cp /home/devuser/.claude/agents/instruction-updater.md ~/.claude/agents/instruction-updater.md
+# Standard setup (vai: prefix)
+cp /workspace/PAI/.claude/commands/vai:update-instruction.md \
+   .claude/commands/vai:update-instruction.md
 
-# OR Project-level (project-specific)
-cp /home/devuser/.claude/agents/instruction-updater.md .claude/agents/instruction-updater.md
+# OR Custom prefix (e.g., myapp:)
+cp /workspace/PAI/.claude/commands/vai:update-instruction.md \
+   .claude/commands/myapp:update-instruction.md
 ```
 
-### Step 3: Create Skill Definition
+**Customizations (if needed):**
+1. **Change prefix** - Rename file and update `name` field in frontmatter
+2. **Update instruction paths** - If your project stores instructions in non-standard location
 
-**Template location:** `/workspace/khali-obsidian-vault/ai-context/vai/skills/update-agent-instructions/SKILL.md`
+**Example customization:**
+```yaml
+# Edit .claude/commands/myapp:update-instruction.md
+---
+name: myapp:update-instruction  # Changed from vai:update-instruction
+description: ...
+---
 
-**Customizations:**
-- Update `skill-name` to match project context
-- Update `context` field (e.g., "vai-specific" → "project-specific")
-- Update file paths in examples to match project structure
-- Update trigger scenarios if project has specific patterns
+<context>
+Recent instruction files: ! `find /path/to/myapp/instructions -name "*.md" ...`
+...
+</context>
+```
+
+### Step 2: Create Skill Definition (Optional)
+
+**Only create if you want automatic trigger recognition.**
+
+**Source:** `/workspace/khali-obsidian-vault/ai-context/vai/skills/update-agent-instructions/SKILL.md`
 
 **Actions:**
 ```bash
 # Create skill directory
 mkdir -p .claude/skills/update-agent-instructions/
 
-# Copy and customize template
-cp /workspace/khali-obsidian-vault/ai-context/vai/skills/update-agent-instructions/SKILL.md \
-   .claude/skills/update-agent-instructions/SKILL.md
-
-# Edit customizations
-# - Update skill-name
-# - Update context field
-# - Update file paths in examples
-```
-
-### Step 4: Create Slash Command
-
-**Template location:** `/workspace/PAI/.claude/commands/vai:update-instruction.md`
-
-**Customizations:**
-- Rename file if different prefix needed (e.g., `project:update-instruction.md`)
-- Update `name` field in frontmatter
-- Update instruction file paths in `<context>` tag
-- Keep core structure identical
-
-**Actions:**
-```bash
-# Standard vai: prefix
-cp /workspace/PAI/.claude/commands/vai:update-instruction.md \
-   .claude/commands/vai:update-instruction.md
-
-# OR Custom prefix
-cp /workspace/PAI/.claude/commands/vai:update-instruction.md \
-   .claude/commands/project:update-instruction.md
-# Then edit file to update name and paths
-```
-
-### Step 5: Setup Session Start Hook (Optional)
-
-**Only needed if:**
-- Project has operational protocols that should auto-load
-- Similar to Vai's `vai-operational-protocols.md` pattern
-
-**Template location:** `/workspace/PAI/.claude/hooks/load-core-context.ts`
-
-**Customizations:**
-- Update path to operational protocols file
-- Update section heading in injected content
-
-**Actions:**
-```bash
 # Copy template
-cp /workspace/PAI/.claude/hooks/load-core-context.ts .claude/hooks/load-core-context.ts
-
-# Edit to update paths
-# - Update vaiContextPath to project-specific protocol file
-# - Update section heading in injected content
-```
-
-### Step 6: Verify Installation
-
-**Checks:**
-1. ✅ Agent file exists and is valid markdown
-2. ✅ Skill file exists in correct location
-3. ✅ Slash command file exists and has correct prefix
-4. ✅ Hook file exists if operational protocols needed
-5. ✅ Test slash command: `/vai:update-instruction test`
-
-**Testing:**
-```bash
-# Test slash command expansion
-/vai:update-instruction This is a test to verify the infrastructure is working
-
-# Should trigger the skill, which launches the sub-agent
-# Sub-agent should analyze and respond
-```
-
-</workflow>
-
----
-
-## Quick Setup Examples
-
-<example name="standard-project-setup">
-
-**Scenario:** New project needs instruction management with standard structure
-
-**Commands:**
-```bash
-# 1. Create agent (user-level, shared)
-cp /home/devuser/.claude/agents/instruction-updater.md ~/.claude/agents/instruction-updater.md
-
-# 2. Create skill (project-level)
-mkdir -p .claude/skills/update-agent-instructions/
 cp /workspace/khali-obsidian-vault/ai-context/vai/skills/update-agent-instructions/SKILL.md \
    .claude/skills/update-agent-instructions/SKILL.md
+```
 
-# 3. Create slash command (standard vai: prefix)
-cp /workspace/PAI/.claude/commands/vai:update-instruction.md \
-   .claude/commands/vai:update-instruction.md
+**Customizations (if needed):**
+1. **Update `skill-name`** - e.g., `update-vai-instructions` → `update-myapp-instructions`
+2. **Update `context`** - e.g., `vai-specific` → `myapp-specific`
+3. **Update file paths in examples** - Match your project structure
 
-# 4. Test
+**Most projects can use the skill as-is** without customization.
+
+### Step 3: Verify Setup
+
+**Test slash command:**
+```bash
 /vai:update-instruction test installation
 ```
 
-**Customization needed:** None for standard setup
+**Should:**
+- ✅ Expand the prompt with context
+- ✅ Launch instruction-updater sub-agent
+- ✅ Agent analyzes and responds
 
-</example>
-
-<example name="custom-prefix-setup">
-
-**Scenario:** Project wants custom prefix like `myapp:` instead of `vai:`
-
-**Commands:**
-```bash
-# 1. Agent (user-level)
-cp /home/devuser/.claude/agents/instruction-updater.md ~/.claude/agents/instruction-updater.md
-
-# 2. Skill (project-level)
-mkdir -p .claude/skills/update-agent-instructions/
-cp /workspace/khali-obsidian-vault/ai-context/vai/skills/update-agent-instructions/SKILL.md \
-   .claude/skills/update-agent-instructions/SKILL.md
-
-# 3. Slash command with custom prefix
-cp /workspace/PAI/.claude/commands/vai:update-instruction.md \
-   .claude/commands/myapp:update-instruction.md
-```
-
-**Customization needed:**
-- Edit `.claude/commands/myapp:update-instruction.md`
-- Change `name: vai:update-instruction` to `name: myapp:update-instruction`
-- Update instruction file paths if different from standard
-
-</example>
-
-<example name="project-specific-agent">
-
-**Scenario:** Project needs its own agent (not shared across projects)
-
-**Commands:**
-```bash
-# 1. Agent (project-level, not user-level)
-mkdir -p .claude/agents/
-cp /home/devuser/.claude/agents/instruction-updater.md \
-   .claude/agents/instruction-updater.md
-
-# 2-3. Skill and slash command (same as standard)
-```
-
-**Customization needed:**
-- Edit `.claude/agents/instruction-updater.md`
-- Update role name: "Instruction Updater" → "MyApp Instruction Updater"
-- Update instruction file paths to project-specific locations
-
-</example>
+</workflow>
 
 ---
 
@@ -286,83 +163,83 @@ cp /home/devuser/.claude/agents/instruction-updater.md \
 
 <customization-points>
 
-### Agent Definition Customizations
+### When Do You Need Customization?
 
-**File:** `.claude/agents/instruction-updater.md` (or `~/.claude/agents/`)
+**No customization needed if:**
+- ✅ Using standard `vai:` prefix
+- ✅ Instructions in `.claude/` directory
+- ✅ Default project structure
 
-**What to customize:**
-1. **Role name** (line 1):
-   ```markdown
-   # Instruction Updater → # ProjectX Instruction Updater
-   ```
-
-2. **Instruction file paths** (in search commands):
-   ```bash
-   # Before
-   grep -r "pattern" /workspace/khali-obsidian-vault/ai-context/vai/
-
-   # After
-   grep -r "pattern" /path/to/project/instructions/
-   ```
-
-3. **Keep unchanged:**
-   - All analysis logic
-   - Educated guessing framework
-   - Investigation procedures
-   - Output format
-
-### Skill Definition Customizations
-
-**File:** `.claude/skills/update-agent-instructions/SKILL.md`
-
-**What to customize:**
-1. **Frontmatter** (lines 1-10):
-   ```yaml
-   skill-name: update-vai-instructions → update-projectx-instructions
-   context: vai-specific → projectx-specific
-   ```
-
-2. **File paths in examples** (throughout):
-   ```markdown
-   # Before
-   Related: vai-operational-protocols.md
-
-   # After
-   Related: projectx-config.md
-   ```
-
-3. **Keep unchanged:**
-   - Trigger scenarios
-   - Context gathering framework
-   - Launch template
-   - Workflow steps
+**Customization needed if:**
+- ❌ Want custom prefix (e.g., `myapp:`)
+- ❌ Instructions in non-standard location
+- ❌ Project-specific trigger patterns
 
 ### Slash Command Customizations
 
 **File:** `.claude/commands/[prefix]:update-instruction.md`
 
 **What to customize:**
-1. **Filename:** `vai:update-instruction.md` → `project:update-instruction.md`
 
-2. **Frontmatter name** (line 2):
-   ```yaml
-   name: vai:update-instruction → project:update-instruction
+1. **Filename and prefix:**
+   ```bash
+   # From
+   vai:update-instruction.md
+
+   # To
+   myapp:update-instruction.md
    ```
 
-3. **Context file paths** (line 23-25):
+2. **Frontmatter name:**
+   ```yaml
+   ---
+   name: vai:update-instruction  # Change to: myapp:update-instruction
+   ---
+   ```
+
+3. **Instruction file paths:**
    ```markdown
+   <context>
    # Before
    Recent instruction files: ! `find /workspace/khali-obsidian-vault/ai-context/vai ...`
 
    # After
-   Recent instruction files: ! `find /path/to/project/instructions ...`
+   Recent instruction files: ! `find /path/to/myapp/docs ...`
+   </context>
    ```
 
-4. **Keep unchanged:**
-   - All XML structure
-   - Process steps
-   - Success criteria
-   - Verification checks
+**Keep unchanged:**
+- All XML structure
+- Process steps
+- Success criteria
+- Tool restrictions
+
+### Skill Definition Customizations (Optional)
+
+**File:** `.claude/skills/update-agent-instructions/SKILL.md`
+
+**What to customize:**
+
+1. **Frontmatter:**
+   ```yaml
+   skill-name: update-vai-instructions  # Change to: update-myapp-instructions
+   context: vai-specific  # Change to: myapp-specific
+   ```
+
+2. **File paths in examples:**
+   ```markdown
+   # Before
+   Related: vai-operational-protocols.md
+
+   # After
+   Related: myapp-config.md
+   ```
+
+**Keep unchanged:**
+- Trigger scenarios
+- Context gathering framework
+- Launch template
+- Workflow steps
 
 </customization-points>
 
@@ -372,75 +249,101 @@ cp /home/devuser/.claude/agents/instruction-updater.md \
 
 <decisions>
 
-### User-level vs Project-level Agent?
-
-**User-level (`~/.claude/agents/`):**
-- ✅ Share analysis logic across all projects
-- ✅ Single source of truth for instruction updates
-- ✅ Less duplication
-- ❌ Can't customize per-project
-
-**Project-level (`.claude/agents/`):**
-- ✅ Customize agent for project-specific needs
-- ✅ Version control with project
-- ✅ Team can share agent definition
-- ❌ Duplication if multiple projects
-
-**Recommendation:** Start with user-level, move to project-level only if customization needed
-
 ### Standard vs Custom Slash Command Prefix?
 
 **Standard `vai:` prefix:**
 - ✅ Consistent with reference implementation
-- ✅ Clear meaning ("Vai agent infrastructure")
-- ❌ Might confuse if project isn't "Vai"
+- ✅ No customization needed
+- ✅ Works immediately
+- ❌ Might be confusing if project isn't "Vai-related"
 
 **Custom prefix (e.g., `myapp:`):**
 - ✅ Matches project naming
-- ✅ Clear context
-- ❌ Requires find/replace in documentation
+- ✅ Clear context for team
+- ❌ Requires renaming file and updating frontmatter
 
-**Recommendation:** Use `vai:` unless project has strong identity
+**Recommendation:** Use `vai:` unless project has strong naming conventions.
 
-### Auto-load Operational Protocols?
+### Create Skill Definition or Just Slash Command?
 
-**Yes (create session start hook):**
-- ✅ Instructions always available
-- ✅ No need to manually load
-- ✅ Ensures compliance
+**Just slash command:**
+- ✅ Simpler setup (1 file)
+- ✅ Explicit invocation only
+- ✅ Enough for most projects
+- ❌ No automatic trigger recognition
 
-**No (manual loading):**
-- ✅ Simpler setup
-- ✅ Less overhead
-- ❌ Might forget to load protocols
+**Slash command + skill:**
+- ✅ Automatic trigger recognition
+- ✅ Gathers context automatically
+- ✅ Better for complex projects
+- ❌ More setup
 
-**Recommendation:** Yes if project has operational protocols, No otherwise
+**Recommendation:** Start with just slash command, add skill if needed.
 
 </decisions>
 
 ---
 
-## Success Criteria
+## Examples
 
-A successful setup should have:
+<example name="minimal-setup">
 
-**Infrastructure Files:**
-- ✅ Agent definition exists (user or project level)
-- ✅ Skill definition exists in `.claude/skills/`
-- ✅ Slash command exists in `.claude/commands/`
-- ✅ Hook exists if operational protocols needed
+**Scenario:** Quick setup for new project
 
-**Functionality:**
-- ✅ Slash command expands correctly: `/[prefix]:update-instruction test`
-- ✅ Skill recognizes trigger patterns
-- ✅ Sub-agent launches and analyzes
-- ✅ Recommendations are concrete and actionable
+**Commands:**
+```bash
+# Create slash command (standard vai: prefix)
+cp /workspace/PAI/.claude/commands/vai:update-instruction.md \
+   .claude/commands/vai:update-instruction.md
 
-**Quality:**
-- ✅ File paths updated to match project structure
-- ✅ Prefix matches project naming convention
-- ✅ Agent can find instruction files
-- ✅ No broken references or dead paths
+# Test
+/vai:update-instruction test
+```
+
+**Done!** Agent is user-level, slash command ready.
+
+</example>
+
+<example name="custom-prefix-setup">
+
+**Scenario:** Project wants `myapp:` prefix
+
+**Commands:**
+```bash
+# 1. Create slash command with custom name
+cp /workspace/PAI/.claude/commands/vai:update-instruction.md \
+   .claude/commands/myapp:update-instruction.md
+
+# 2. Edit the file
+# Change: name: vai:update-instruction
+# To: name: myapp:update-instruction
+
+# 3. Test
+/myapp:update-instruction test
+```
+
+</example>
+
+<example name="full-setup-with-skill">
+
+**Scenario:** Complex project needs automatic trigger recognition
+
+**Commands:**
+```bash
+# 1. Slash command
+cp /workspace/PAI/.claude/commands/vai:update-instruction.md \
+   .claude/commands/vai:update-instruction.md
+
+# 2. Skill definition
+mkdir -p .claude/skills/update-agent-instructions/
+cp /workspace/khali-obsidian-vault/ai-context/vai/skills/update-agent-instructions/SKILL.md \
+   .claude/skills/update-agent-instructions/SKILL.md
+
+# 3. Test
+/vai:update-instruction test
+```
+
+</example>
 
 ---
 
@@ -448,77 +351,67 @@ A successful setup should have:
 
 <troubleshooting>
 
-### Agent Not Found Error
-
-**Symptom:** `Agent type 'instruction-updater' not found`
-
-**Causes:**
-1. Agent file not in correct location
-2. Agent file has syntax errors
-3. Claude Code needs restart
-
-**Fixes:**
-```bash
-# Verify agent file exists
-ls -la ~/.claude/agents/instruction-updater.md
-# OR
-ls -la .claude/agents/instruction-updater.md
-
-# Check for syntax errors
-head -20 ~/.claude/agents/instruction-updater.md
-
-# Restart Claude Code
-# Exit and restart terminal/IDE
-```
-
 ### Slash Command Doesn't Work
 
 **Symptom:** `/vai:update-instruction` not recognized
-
-**Causes:**
-1. File not in `.claude/commands/` directory
-2. Filename doesn't match command name
-3. YAML frontmatter invalid
 
 **Fixes:**
 ```bash
 # Verify file exists
 ls -la .claude/commands/vai:update-instruction.md
 
-# Check frontmatter
+# Check frontmatter has correct name
 head -5 .claude/commands/vai:update-instruction.md
 # Should see: name: vai:update-instruction
-
-# Verify YAML is valid (no tabs, proper indentation)
 ```
 
-### Agent Can't Find Instruction Files
+### Agent Not Found
 
-**Symptom:** Agent reports "no instruction files found"
+**Symptom:** `Agent type 'instruction-updater' not found`
 
-**Causes:**
-1. File paths not updated for project
-2. Instruction directory doesn't exist
-3. Paths have typos
+**This shouldn't happen** since agent is user-level, but if it does:
+```bash
+# Verify user-level agent exists
+ls -la ~/.claude/agents/instruction-updater.md
+
+# Restart Claude Code if needed
+```
+
+### Paths Don't Work
+
+**Symptom:** Agent can't find instruction files
 
 **Fixes:**
 ```bash
-# Test the find command from agent
+# Test the find command from slash command
 find /workspace/khali-obsidian-vault/ai-context/vai -name "*.md" -type f
 
-# Update paths in agent definition
-# Edit: .claude/agents/instruction-updater.md
-# Update all grep/find commands to correct paths
+# If path is wrong, edit slash command:
+# .claude/commands/vai:update-instruction.md
+# Update the find command in <context> section
 ```
 
 </troubleshooting>
 
 ---
 
+## Summary
+
+**Remember:** The agent is already user-level and shared across all projects. You only need to create:
+
+1. **Slash command** (required) - 1 file to copy
+2. **Skill definition** (optional) - 1 file to copy if you want auto-triggers
+
+That's it. Simple setup, powerful capability.
+
+---
+
 ## Version History
 
+- **v2.0** (2025-12-05):
+  - Removed agent creation from workflow (already user-level)
+  - Focused on per-project components only
+  - Simplified to: slash command + optional skill
+  - Reduced complexity significantly
 - **v1.0** (2025-12-05):
-  - Initial skill creation
-  - Supports user-level and project-level setup
-  - Includes agent, skill, slash command, and hook setup
-  - Provides customization guide and troubleshooting
+  - Initial skill creation (over-engineered)
