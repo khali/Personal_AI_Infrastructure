@@ -51,6 +51,38 @@ git rev-parse --show-toplevel  # Verify repo root
 - Global: `/home/devuser/ai-global/ai-global-docs/claude-global.md`
 - Vai-specific: `/workspace/khali-obsidian-vault/ai-context/vai/vai-operational-protocols.md`
 
+### Tool-Specific Instructions (Multi-Tool Support)
+
+**Pattern:** Separate instruction files for each AI tool (Claude Code, Gemini CLI, Cursor/Codex)
+
+**Global level** (`/home/devuser/ai-global/`):
+- Symlinks in `claude/`:
+  - `CLAUDE.md` → `../ai-global-docs/claude-global.md`
+  - `GEMINI.md` → `../ai-global-docs/gemini-global.md`
+  - `AGENTS.md` → `../ai-global-docs/codex-global.md`
+- Content files in `ai-global-docs/`:
+  - `claude-global.md` - Claude Code-specific features and references
+  - `gemini-global.md` - Gemini CLI-specific features and references
+  - `codex-global.md` - Cursor/Codex-specific features and references
+
+**Project level** (`/workspace/PAI/.claude/`):
+- `CLAUDE.md` - Claude Code-specific PAI instructions
+- `GEMINI.md` - Gemini CLI-specific PAI instructions
+- `AGENTS.md` - Cursor/Codex-specific PAI instructions
+
+**Policy (CRITICAL):**
+- Tool-specific files ONLY contain tool-specific operational details
+- All tool-agnostic content goes in external files (vai-operational-protocols.md, claude-global.md, etc.)
+- Tool files reference external files, never duplicate content
+- Example: Git workflow goes in vai-operational-protocols.md, NOT in CLAUDE.md/GEMINI.md/AGENTS.md
+
+**Why this pattern:**
+- Tools read from standardized filenames (CLAUDE.md, GEMINI.md, AGENTS.md)
+- Descriptive filenames for content files (-global.md suffix)
+- Symlinks allow tools to find files in expected locations
+- Separation prevents duplication across tools
+- Each project can customize tool-specific instructions
+
 ### Hooks
 - Directory: `/workspace/PAI/.claude/hooks/`
 - Session start: `load-core-context.ts` loads:
