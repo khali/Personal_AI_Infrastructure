@@ -207,13 +207,23 @@ Add to `cron_jobs` section:
 "backup-vault": {
   "enabled": true,
   "schedule": "0 3 * * *",
-  "command": "/workspace/agent-infrastructure/scripts/backup-obsidian-vault.sh",
+  "script": "/workspace/agent-infrastructure/scripts/backup-obsidian-vault.sh",
   "container": "services",
-  "log_path": "/workspace/vai/logs/backup-vault.log",
-  "timeout_seconds": 300,
-  "notify_on_fail": "alerts"
+  "log_path": "/workspace/vai/logs/cron/backup-vault.log",
+  "description": "Daily backup of Obsidian vault"
 }
 ```
+
+**CRITICAL:** Log path MUST use `/workspace/vai/logs/cron/` prefix (not `/workspace/vai/logs/` directly). This matches where cron-wrapper.sh writes logs.
+
+**What you get for free:**
+- ✅ Automatic logging to job-specific log file
+- ✅ Centralized error logging to `/workspace/vai/logs/cron/cron-errors.log`
+- ✅ Wrapper logging to `/workspace/vai/logs/cron/cron-wrapper.log`
+- ✅ Failure notifications via ntfy.sh (automatic)
+- ✅ Pause/resume capability via manage-service.sh
+- ✅ Job duration tracking and logging
+- ✅ Exit code propagation for monitoring
 
 **Use jq to add service:**
 ```bash
@@ -389,30 +399,41 @@ Create test file in `/workspace/agent-infrastructure/tests/unit/`:
 - **Naming pattern:** `test_<service-name>.bats`
 - **Example:** `test_vault_github_sync.bats`, `test_redis_service.bats`
 
-### What to Test
+### Generic Infrastructure Tests (Automatic)
 
-**For ALL services (daemon and cron jobs):**
+**Good news:** Most infrastructure is tested automatically!
 
-1. **Configuration validation:**
-   - Service exists in system-config.json
-   - Service is enabled
-   - Has correct container assignment
-   - Has log path configured
+Run `/workspace/agent-infrastructure/tests/unit/test_service_infrastructure.bats` to validate:
+- ✅ cron-wrapper.sh configuration and logging
+- ✅ Notification infrastructure (notify.sh library + wrapper)
+- ✅ Log directory structure and permissions
+- ✅ ALL services have required fields (enabled, container, schedule, script, log_path)
+- ✅ ALL log paths use /workspace/vai/logs/cron/ prefix
+- ✅ ALL scripts exist and are executable
+- ✅ ALL enabled services appear in crontab
+- ✅ ALL services use cron-wrapper pattern
+- ✅ Service de-registration (disabled services don't run)
 
-2. **Script/binary validation:**
-   - Script/binary file exists
-   - Has correct permissions (executable for scripts)
-   - Has correct shebang (`#!/bin/bash` for bash scripts)
+**When you add a new service, the generic tests automatically validate it.**
 
-3. **Crontab validation (for cron jobs only):**
-   - Job appears in crontab file
-   - Uses cron-wrapper pattern
-   - Has correct schedule
+### What to Test (Service-Specific)
 
-4. **Error handling validation:**
-   - Script handles failures gracefully
-   - Has error logging
-   - Exits with appropriate codes
+**Focus your per-service tests on:**
+
+1. **Service-specific configuration:**
+   - Correct schedule/frequency for this service
+   - Correct script path for this service
+   - Service-specific settings (timeout, retries, etc.)
+
+2. **Script logic validation:**
+   - Script has correct structure (set -euo pipefail, error handling)
+   - Script implements expected behavior (e.g., checks for changes before committing)
+   - Script uses correct paths and configuration
+
+3. **Error scenarios (optional but recommended):**
+   - Script handles expected failures gracefully
+   - Script logs errors appropriately
+   - Script exits with correct codes
 
 ### Test Template for Cron Jobs
 
@@ -484,7 +505,18 @@ setup() {
 @test "<job-name> uses cron-wrapper pattern in crontab" {
   grep -q "/usr/local/bin/cron-wrapper.sh <job-name>" "$PROJECT_ROOT/docker/services/minio-bisync-cron"
 }
+
+# =============================================================================
+# MONITORING AND LOGGING (examples - generic tests cover most of this)
+# =============================================================================
+
+@test "<job-name> log path uses correct /workspace/vai/logs/cron/ prefix" {
+  log_path=$(cfg_get '.cron_jobs["<job-name>"].log_path')
+  [[ "$log_path" == "/workspace/vai/logs/cron/"* ]]
+}
 ```
+
+**Note:** Most monitoring/logging infrastructure is validated by `test_service_infrastructure.bats`. Only add service-specific logging tests if needed.
 
 ### Test Template for Daemon Services
 
