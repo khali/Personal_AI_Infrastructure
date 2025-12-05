@@ -5,6 +5,45 @@
 - Type: AI agent infrastructure framework
 - Context: Skills, agents, hooks, and commands for Claude Code
 
+## Repository Structure (CRITICAL)
+
+### Active Repositories - OK to Commit
+- ✅ **PAI**: `/workspace/PAI/` (github.com/khali/Personal_AI_Infrastructure)
+  - Agent orchestration infrastructure
+  - Skills, agents, hooks, commands
+  - THIS PROJECT
+- ✅ **agent-infrastructure**: `/workspace/agent-infrastructure/`
+  - Docker/services/logging/infrastructure management
+  - SINGLE SOURCE OF TRUTH for all infrastructure
+- ✅ **khali-workspace**: `/workspace/` (github.com/khali/khali-workspace)
+  - Workspace container repository containing:
+    - khali-obsidian-vault/ - Obsidian vault (syncs to MinIO)
+    - blink-config/ - Mobile SSH configuration
+    - vay/ - Agent logs and data
+  - Note: PAI and agent-infrastructure are separate repos within workspace
+- ✅ **ai-global**: `/home/devuser/ai-global/` (github.com/khali/ai-global)
+  - Global configs and instructions
+  - Shared across all projects
+
+### Repository Model (Simplified)
+- **No submodule tracking** - each repo commits independently
+- PAI, agent-infrastructure, ai-global are separate git repositories
+- khali-workspace contains vault and workspace files
+- Each repo tracked in .gitignore to prevent cross-tracking
+
+### Commit Safety Rule
+**Before EVERY commit:**
+```bash
+pwd  # Check current directory
+git rev-parse --show-toplevel  # Verify repo root
+
+# Verification:
+# /workspace → khali-workspace (includes vault)
+# /workspace/PAI → PAI repo (this project)
+# /workspace/agent-infrastructure → agent-infrastructure repo
+# /home/devuser/ai-global → ai-global repo
+```
+
 ## Agent Instructions
 
 ### Primary Instruction Files
