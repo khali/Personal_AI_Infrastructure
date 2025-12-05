@@ -3,22 +3,36 @@ skill-name: setup-instruction-updater
 version: 2.0
 created: 2025-12-05
 last-updated: 2025-12-05
-status: active
-purpose: Bootstrap instruction-updater project components (skill + slash command)
+status: deprecated
+purpose: DEPRECATED - Use update-agent-instructions skill instead (v3.0+)
 context: general-purpose
-tags: [meta, setup, bootstrap, instructions, infrastructure]
+tags: [meta, setup, bootstrap, instructions, infrastructure, deprecated]
 ---
 
-# Setup Instruction-Updater Infrastructure - Skill
+# Setup Instruction-Updater Infrastructure - Skill [DEPRECATED]
 
-## Purpose
+## ⚠️ DEPRECATED
 
-This skill helps you set up the instruction-updater system in new projects. Since the **agent is already user-level** (`~/.claude/agents/instruction-updater.md`) and shared across all projects, you only need to create:
+**This skill has been replaced by the global `update-agent-instructions` skill (v3.0).**
+
+**New approach:**
+- Global skill with automatic project structure discovery
+- Self-maintaining `.claude/PROJECT-INSTRUCTION-STRUCTURE.md`
+- 3-5x token savings on repeat runs
+- No per-project setup needed
+
+**See:** `.claude/skills/update-agent-instructions/SKILL.md`
+
+---
+
+## Old Purpose (for reference)
+
+This skill helped you set up the instruction-updater system in new projects. Since the **agent is already user-level** (`~/.claude/agents/instruction-updater.md`) and shared across all projects, you only needed to create:
 
 1. **Skill definition** - Recognition skill for when to trigger the agent (optional)
 2. **Slash command** - `/vai:update-instruction` or custom-prefixed command
 
-That's it. The agent is already available.
+**Why deprecated:** The new approach discovers project structure automatically and maintains a structure document, eliminating manual setup while being more token-efficient.
 
 ---
 
