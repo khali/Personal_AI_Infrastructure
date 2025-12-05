@@ -379,7 +379,205 @@ Until this is fixed, pause/resume may not work correctly. Use the cron-wrapper.s
 
 ---
 
-## Step 9: Test Service Locally
+## Step 9: Write Tests
+
+**MANDATORY:** All services and cron jobs MUST have automated tests to verify configuration and functionality.
+
+### Test File Location
+
+Create test file in `/workspace/agent-infrastructure/tests/unit/`:
+- **Naming pattern:** `test_<service-name>.bats`
+- **Example:** `test_vault_github_sync.bats`, `test_redis_service.bats`
+
+### What to Test
+
+**For ALL services (daemon and cron jobs):**
+
+1. **Configuration validation:**
+   - Service exists in system-config.json
+   - Service is enabled
+   - Has correct container assignment
+   - Has log path configured
+
+2. **Script/binary validation:**
+   - Script/binary file exists
+   - Has correct permissions (executable for scripts)
+   - Has correct shebang (`#!/bin/bash` for bash scripts)
+
+3. **Crontab validation (for cron jobs only):**
+   - Job appears in crontab file
+   - Uses cron-wrapper pattern
+   - Has correct schedule
+
+4. **Error handling validation:**
+   - Script handles failures gracefully
+   - Has error logging
+   - Exits with appropriate codes
+
+### Test Template for Cron Jobs
+
+```bash
+#!/usr/bin/env bats
+# Unit tests for <service-name> cron job
+
+# Setup - runs before each test
+setup() {
+  TEST_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")" && pwd)"
+  PROJECT_ROOT="$(cd "$TEST_DIR/../.." && pwd)"
+
+  export CONFIG_PATH="$PROJECT_ROOT/config/system-config.json"
+  export DEPLOY_ENV="vps"
+
+  source "$PROJECT_ROOT/config/load-config.sh"
+  export CURRENT_ENV="vps"
+}
+
+# =============================================================================
+# CRON JOB CONFIGURATION
+# =============================================================================
+
+@test "<job-name> job exists in system-config.json" {
+  result=$(cfg_get '.cron_jobs["<job-name>"]')
+  [ -n "$result" ]
+}
+
+@test "<job-name> job is enabled" {
+  enabled=$(cfg_get '.cron_jobs["<job-name>"].enabled')
+  [ "$enabled" = "true" ]
+}
+
+@test "<job-name> has correct schedule" {
+  schedule=$(cron_job_schedule "<job-name>")
+  [ "$schedule" = "<expected-schedule>" ]
+}
+
+@test "<job-name> has correct script path" {
+  script=$(cron_job_script "<job-name>")
+  [ "$script" = "/workspace/agent-infrastructure/scripts/<path-to-script>" ]
+}
+
+# =============================================================================
+# SCRIPT EXISTENCE AND PERMISSIONS
+# =============================================================================
+
+@test "<job-name> script exists" {
+  [ -f "$PROJECT_ROOT/scripts/<path-to-script>" ]
+}
+
+@test "<job-name> script is executable" {
+  [ -x "$PROJECT_ROOT/scripts/<path-to-script>" ]
+}
+
+@test "<job-name> script has correct shebang" {
+  first_line=$(head -1 "$PROJECT_ROOT/scripts/<path-to-script>")
+  [ "$first_line" = "#!/bin/bash" ]
+}
+
+# =============================================================================
+# CRONTAB FILE VALIDATION
+# =============================================================================
+
+@test "<job-name> appears in crontab file" {
+  grep -q "<job-name>" "$PROJECT_ROOT/docker/services/minio-bisync-cron"
+}
+
+@test "<job-name> uses cron-wrapper pattern in crontab" {
+  grep -q "/usr/local/bin/cron-wrapper.sh <job-name>" "$PROJECT_ROOT/docker/services/minio-bisync-cron"
+}
+```
+
+### Test Template for Daemon Services
+
+```bash
+#!/usr/bin/env bats
+# Unit tests for <service-name> daemon service
+
+setup() {
+  TEST_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")" && pwd)"
+  PROJECT_ROOT="$(cd "$TEST_DIR/../.." && pwd)"
+
+  export CONFIG_PATH="$PROJECT_ROOT/config/system-config.json"
+  export DEPLOY_ENV="vps"
+
+  source "$PROJECT_ROOT/config/load-config.sh"
+  export CURRENT_ENV="vps"
+}
+
+# =============================================================================
+# SERVICE CONFIGURATION
+# =============================================================================
+
+@test "<service-name> service exists in system-config.json" {
+  result=$(cfg_get '.services["<service-name>"]')
+  [ -n "$result" ]
+}
+
+@test "<service-name> service is enabled" {
+  enabled=$(cfg_get '.services["<service-name>"].enabled')
+  [ "$enabled" = "true" ]
+}
+
+@test "<service-name> has correct type" {
+  type=$(cfg_get '.services["<service-name>"].type')
+  [ "$type" = "daemon" ]
+}
+
+@test "<service-name> has health check configured" {
+  health_cmd=$(service_health_cmd "<service-name>")
+  [ -n "$health_cmd" ]
+}
+
+@test "<service-name> has restart command configured" {
+  restart_cmd=$(service_restart_cmd "<service-name>")
+  [ -n "$restart_cmd" ]
+}
+```
+
+### Running Tests
+
+**Run all tests:**
+```bash
+cd /workspace/agent-infrastructure
+bats tests/unit/
+```
+
+**Run specific test file:**
+```bash
+bats tests/unit/test_<service-name>.bats
+```
+
+**Expected output:**
+```
+1..15
+ok 1 service-name job exists in system-config.json
+ok 2 service-name job is enabled
+ok 3 service-name has correct schedule
+...
+ok 15 service-name exits cleanly when no changes detected
+```
+
+### Commit Tests with Service
+
+**Tests MUST be committed in the same commit as the service:**
+```bash
+git add config/system-config.json
+git add scripts/sync/<service-script>.sh
+git add tests/unit/test_<service-name>.bats
+git commit -m "feat: Add <service-name> service with tests
+
+- Created <service-name> script/configuration
+- Added to cron jobs / services registry
+- Wrote 15 unit tests covering configuration and behavior
+- All tests passing
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+```
+
+---
+
+## Step 10: Test Service Locally
 
 **Test the complete service lifecycle:**
 
@@ -441,7 +639,7 @@ docker exec services-container tail -20 /workspace/vai/logs/backup-vault.log
 
 ---
 
-## Step 10: Commit Changes
+## Step 11: Commit Changes
 
 **Commit system-config.json changes:**
 
