@@ -1,0 +1,642 @@
+# Workflow: Add Service
+
+**Purpose:** Create new daemon service or cron job in the agent-infrastructure system.
+
+**References needed:**
+- `references/services-registry-schema.md` - Service definition schema
+- `references/health-check-patterns.md` - Health check implementation
+- `references/docker-integration.md` - Container and port configuration
+- `references/deployment-procedure.md` - Deployment steps
+
+---
+
+## Step 1: Determine Service Type
+
+Ask or infer from context:
+- **Daemon service** - Always-running background service (e.g., MinIO, Syncthing, database)
+- **Cron job** - Scheduled task that runs periodically (e.g., backups, monitoring)
+- **System service** - OS-level service (rarely added, usually pre-configured)
+
+**Ask user if not clear:** "What type of service do you want to add: daemon or cron job?"
+
+---
+
+## Step 2: Gather Service Information
+
+### For Daemon Services:
+
+**Required information:**
+- **Service name** - Short identifier (e.g., "minio", "postgres", "redis")
+- **Container** - Which container runs this service ("services", "vai", "agents")
+- **Start command** - Full command to start the service
+- **Health check** - How to verify service is healthy
+- **Port(s)** - Port numbers if service needs external access
+- **Dependencies** - Other services this depends on
+
+**Example questions:**
+```
+Service name: redis
+Container: services-container
+Start command: /usr/local/bin/redis-server /etc/redis/redis.conf
+Health check: TCP connection to localhost:6379
+Ports needed: 6379 (for external Redis clients)
+Log location: /workspace/vai/logs/redis.log
+Dependencies: None
+```
+
+### For Cron Jobs:
+
+**Required information:**
+- **Job name** - Short identifier (e.g., "backup-vault", "cleanup-logs")
+- **Schedule** - Cron expression (e.g., "0 2 * * *" for daily at 2 AM)
+- **Command** - Full command or script path to execute
+- **Container** - Which container runs this job
+- **Timeout** - Maximum execution time before considering it failed
+
+**Example questions:**
+```
+Job name: backup-vault
+Schedule: 0 3 * * * (daily at 3 AM)
+Command: /workspace/agent-infrastructure/scripts/backup-obsidian-vault.sh
+Container: services-container
+Timeout: 300s (5 minutes)
+Log location: /workspace/vai/logs/backup-vault.log
+```
+
+---
+
+## Step 3: Design Health Check
+
+**Choose health check type based on service:**
+
+### HTTP Health Check (for web services)
+```json
+"health_check": {
+  "type": "http",
+  "endpoint": "http://localhost:9000/health",
+  "interval_seconds": 60,
+  "timeout_seconds": 5
+}
+```
+
+**Test health check:**
+```bash
+curl -f -s -m 5 http://localhost:9000/health || echo "Failed"
+```
+
+### Process Health Check (for background services)
+```json
+"health_check": {
+  "type": "process",
+  "process_name": "redis-server",
+  "interval_seconds": 60
+}
+```
+
+**Test health check:**
+```bash
+pgrep -f "redis-server" > /dev/null || echo "Failed"
+```
+
+### TCP Health Check (for network services)
+```json
+"health_check": {
+  "type": "tcp",
+  "host": "localhost",
+  "port": 6379,
+  "interval_seconds": 60
+}
+```
+
+**Test health check:**
+```bash
+timeout 5 bash -c "cat < /dev/null > /dev/tcp/localhost/6379" || echo "Failed"
+```
+
+### Custom Health Check (for complex validation)
+```json
+"health_check": {
+  "type": "custom",
+  "command": "/workspace/agent-infrastructure/scripts/health/check-redis.sh",
+  "interval_seconds": 60
+}
+```
+
+**Create custom health check script:**
+```bash
+#!/bin/bash
+# /workspace/agent-infrastructure/scripts/health/check-redis.sh
+
+# Check if Redis is responding
+if redis-cli ping | grep -q "PONG"; then
+    exit 0  # Healthy
+else
+    exit 1  # Unhealthy
+fi
+```
+
+---
+
+## Step 4: Create Restart Command
+
+**Daemon services need restart command for auto-recovery:**
+
+**Pattern:**
+```bash
+# Start the service in background with logging
+/usr/local/bin/service-name --config /etc/service/config.conf >> /workspace/vai/logs/service.log 2>&1 &
+```
+
+**Examples:**
+```bash
+# MinIO
+/usr/local/bin/minio server /data --console-address :9001 >> /workspace/vai/logs/minio.log 2>&1 &
+
+# Redis
+/usr/local/bin/redis-server /etc/redis/redis.conf >> /workspace/vai/logs/redis.log 2>&1 &
+
+# Syncthing
+/usr/local/bin/syncthing serve --no-browser --home=/workspace/syncthing-config >> /workspace/vai/logs/syncthing.log 2>&1 &
+```
+
+**Test restart command manually:**
+```bash
+# Stop the service first
+pkill -f "service-name"
+
+# Run the restart command
+eval "YOUR_RESTART_COMMAND"
+
+# Verify it started
+pgrep -f "service-name"
+```
+
+---
+
+## Step 5: Update system-config.json
+
+**Read current configuration:**
+```bash
+cat /workspace/agent-infrastructure/config/system-config.json | jq '.services'
+```
+
+**Add new service entry:**
+
+### For Daemon Service:
+```json
+"redis": {
+  "enabled": true,
+  "type": "daemon",
+  "container": "services",
+  "health_check": {
+    "type": "tcp",
+    "host": "localhost",
+    "port": 6379,
+    "interval_seconds": 60
+  },
+  "restart_cmd": "/usr/local/bin/redis-server /etc/redis/redis.conf >> /workspace/vai/logs/redis.log 2>&1 &",
+  "log_path": "/workspace/vai/logs/redis.log",
+  "notify_on_fail": "alerts",
+  "dependencies": []
+}
+```
+
+### For Cron Job:
+Add to `cron_jobs` section:
+```json
+"backup-vault": {
+  "enabled": true,
+  "schedule": "0 3 * * *",
+  "command": "/workspace/agent-infrastructure/scripts/backup-obsidian-vault.sh",
+  "container": "services",
+  "log_path": "/workspace/vai/logs/backup-vault.log",
+  "timeout_seconds": 300,
+  "notify_on_fail": "alerts"
+}
+```
+
+**Use jq to add service:**
+```bash
+# Backup first
+cp /workspace/agent-infrastructure/config/system-config.json \
+   /workspace/agent-infrastructure/config/system-config.json.backup
+
+# Add daemon service
+jq '.services.redis = {
+  "enabled": true,
+  "type": "daemon",
+  "container": "services",
+  "health_check": {
+    "type": "tcp",
+    "host": "localhost",
+    "port": 6379,
+    "interval_seconds": 60
+  },
+  "restart_cmd": "/usr/local/bin/redis-server /etc/redis/redis.conf >> /workspace/vai/logs/redis.log 2>&1 &",
+  "log_path": "/workspace/vai/logs/redis.log",
+  "notify_on_fail": "alerts",
+  "dependencies": []
+}' /workspace/agent-infrastructure/config/system-config.json > /tmp/system-config.json.new
+
+# Validate JSON syntax
+jq empty /tmp/system-config.json.new && mv /tmp/system-config.json.new /workspace/agent-infrastructure/config/system-config.json
+```
+
+---
+
+## Step 6: Update docker-compose.yml (if needed)
+
+**Check if service needs port mapping:**
+
+If service needs external access, update `/workspace/agent-infrastructure/docker/docker-compose.yml`:
+
+```yaml
+services:
+  services:
+    container_name: services-container
+    ports:
+      - "8384:8384"    # Syncthing
+      - "22000:22000"  # Syncthing sync
+      - "9000:9000"    # MinIO API
+      - "9001:9001"    # MinIO Console
+      - "6379:6379"    # Redis (NEW)
+```
+
+**Rebuild containers if docker-compose changed:**
+```bash
+cd /workspace/agent-infrastructure/docker
+docker compose up -d --build
+```
+
+---
+
+## Step 7: Create Installation Script (if needed)
+
+**If service requires installation:**
+
+Create script in `/workspace/agent-infrastructure/scripts/install/`:
+
+```bash
+#!/bin/bash
+# /workspace/agent-infrastructure/scripts/install/install-redis.sh
+
+set -euo pipefail
+
+echo "Installing Redis..."
+
+# Download and install
+wget https://download.redis.io/redis-stable.tar.gz
+tar -xzf redis-stable.tar.gz
+cd redis-stable
+make
+make install
+
+# Create config directory
+mkdir -p /etc/redis
+
+# Create default config
+cat > /etc/redis/redis.conf << 'EOF'
+bind 0.0.0.0
+port 6379
+daemonize no
+loglevel notice
+EOF
+
+echo "Redis installed successfully"
+```
+
+**Run installation inside container:**
+```bash
+docker exec services-container bash /workspace/agent-infrastructure/scripts/install/install-redis.sh
+```
+
+---
+
+## Step 8: Add Cron Job to Crontab (for cron jobs)
+
+**IMPORTANT:** All cron jobs MUST use the cron-wrapper.sh pattern for standardized logging, pause/resume, and error handling.
+
+**Cron wrapper pattern:**
+```bash
+SCHEDULE /usr/local/bin/cron-wrapper.sh JOB_NAME "COMMAND"
+```
+
+**Add to crontab file:**
+
+1. **Edit the crontab file:**
+```bash
+# Open the services container crontab file
+vim /workspace/agent-infrastructure/docker/services/minio-bisync-cron
+```
+
+2. **Add new entry using cron-wrapper pattern:**
+```bash
+# Example: Daily backup at 3 AM
+0 3 * * * /usr/local/bin/cron-wrapper.sh backup-vault "/workspace/agent-infrastructure/scripts/backup-obsidian-vault.sh"
+
+# Example: Hourly cleanup
+0 * * * * /usr/local/bin/cron-wrapper.sh cleanup-temp "/workspace/agent-infrastructure/scripts/cleanup-temp-files.sh"
+
+# Example: Every 5 minutes monitoring
+*/5 * * * * /usr/local/bin/cron-wrapper.sh monitor-service "/workspace/agent-infrastructure/scripts/monitor-service.sh"
+```
+
+**What cron-wrapper.sh provides:**
+- Automatic logging to `/var/log/cron/${JOB_NAME}.log`
+- Pause/resume capability via `/home/devuser/ai-global/config/cron-pause/${JOB_NAME}.paused`
+- Error logging to `/var/log/cron/cron-errors.log`
+- Failure notifications via ntfy.sh
+- Execution time tracking
+
+**Deploy updated crontab to container:**
+```bash
+# Copy crontab file into container
+docker cp /workspace/agent-infrastructure/docker/services/minio-bisync-cron \
+         services-container:/etc/cron.d/service-jobs
+
+# Set proper permissions
+docker exec services-container chmod 0644 /etc/cron.d/service-jobs
+
+# Reload cron (may require cron restart)
+docker exec services-container service cron reload
+```
+
+**Verify cron job added:**
+```bash
+# Check crontab file
+docker exec services-container cat /etc/cron.d/service-jobs | grep "backup-vault"
+
+# Check cron wrapper log after next execution
+docker exec services-container tail -20 /var/log/cron/cron-wrapper.log | grep "backup-vault"
+```
+
+**Known Issue (Path Mismatch Bug):**
+⚠️ There's currently a path mismatch between `cron-wrapper.sh` and `manage-service.sh`:
+- `cron-wrapper.sh` checks pause files in: `/home/devuser/ai-global/config/cron-pause/`
+- `manage-service.sh` creates pause files in: `/var/run/cron-pause/`
+
+Until this is fixed, pause/resume may not work correctly. Use the cron-wrapper.sh path for now.
+
+---
+
+## Step 9: Test Service Locally
+
+**Test the complete service lifecycle:**
+
+### For Daemon Services:
+
+1. **Start the service manually:**
+```bash
+docker exec services-container bash -c "YOUR_RESTART_COMMAND"
+```
+
+2. **Verify it's running:**
+```bash
+docker exec services-container pgrep -f "service-name"
+```
+
+3. **Test health check:**
+```bash
+# HTTP check
+docker exec services-container curl -f http://localhost:9000/health
+
+# Process check
+docker exec services-container pgrep -f "redis-server"
+
+# TCP check
+docker exec services-container timeout 5 bash -c "cat < /dev/null > /dev/tcp/localhost/6379"
+```
+
+4. **Test restart (simulate failure):**
+```bash
+# Kill the service
+docker exec services-container pkill -f "service-name"
+
+# Run health check (should fail)
+docker exec services-container YOUR_HEALTH_CHECK_COMMAND
+
+# Run restart command (auto-recovery)
+docker exec services-container bash -c "YOUR_RESTART_COMMAND"
+
+# Verify recovered
+docker exec services-container YOUR_HEALTH_CHECK_COMMAND
+```
+
+### For Cron Jobs:
+
+1. **Run job manually:**
+```bash
+docker exec services-container bash /workspace/agent-infrastructure/scripts/backup-obsidian-vault.sh
+```
+
+2. **Check exit code:**
+```bash
+echo $?  # Should be 0 for success
+```
+
+3. **Verify log output:**
+```bash
+docker exec services-container tail -20 /workspace/vai/logs/backup-vault.log
+```
+
+---
+
+## Step 10: Commit Changes
+
+**Commit system-config.json changes:**
+
+```bash
+cd /workspace/agent-infrastructure
+git add config/system-config.json
+git add docker/docker-compose.yml  # If modified
+git add scripts/install/  # If created installation script
+git commit -m "feat: Add redis service to infrastructure
+
+- Added Redis daemon service to services registry
+- Configured TCP health check on port 6379
+- Added port mapping in docker-compose.yml
+- Created installation script
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+git push
+```
+
+---
+
+## Step 11: Deploy to VPS
+
+**Deploy system-config.json to VPS:**
+
+```bash
+# Copy updated config to VPS
+scp -i /home/devuser/ai-global/config/ssh/id_ed25519_container \
+    -o UserKnownHostsFile=/home/devuser/ai-global/config/ssh/known_hosts \
+    /workspace/agent-infrastructure/config/system-config.json \
+    root@31.97.226.160:/workspace/agent-infrastructure/config/system-config.json
+```
+
+**If docker-compose changed, rebuild containers on VPS:**
+```bash
+ssh -i /home/devuser/ai-global/config/ssh/id_ed25519_container \
+    -o UserKnownHostsFile=/home/devuser/ai-global/config/ssh/known_hosts \
+    root@31.97.226.160 "cd /workspace/agent-infrastructure/docker && docker compose up -d --build"
+```
+
+**Start the service on VPS:**
+```bash
+ssh -i /home/devuser/ai-global/config/ssh/id_ed25519_container \
+    -o UserKnownHostsFile=/home/devuser/ai-global/config/ssh/known_hosts \
+    root@31.97.226.160 "docker exec services-container bash -c 'YOUR_RESTART_COMMAND'"
+```
+
+---
+
+## Step 12: Verify Deployment
+
+**Check service is running on VPS:**
+```bash
+ssh -i /home/devuser/ai-global/config/ssh/id_ed25519_container \
+    -o UserKnownHostsFile=/home/devuser/ai-global/config/ssh/known_hosts \
+    root@31.97.226.160 "docker exec services-container pgrep -f 'service-name'"
+```
+
+**Test health check on VPS:**
+```bash
+ssh -i /home/devuser/ai-global/config/ssh/id_ed25519_container \
+    -o UserKnownHostsFile=/home/devuser/ai-global/config/ssh/known_hosts \
+    root@31.97.226.160 "docker exec services-container YOUR_HEALTH_CHECK_COMMAND"
+```
+
+**Monitor for 15 minutes (3 health check cycles):**
+```bash
+# Wait and check health check logs
+sleep 900  # 15 minutes
+
+# Check if health checks are passing
+ssh -i /home/devuser/ai-global/config/ssh/id_ed25519_container \
+    -o UserKnownHostsFile=/home/devuser/ai-global/config/ssh/known_hosts \
+    root@31.97.226.160 "grep 'redis' /var/log/syslog | tail -20"
+```
+
+---
+
+## Step 13: Document the Service
+
+**Create service documentation in Obsidian vault:**
+
+File: `/workspace/khali-obsidian-vault/Infrastructure/Services/Redis.md`
+
+```markdown
+---
+service: redis
+type: daemon
+container: services-container
+health-check: TCP port 6379
+added-date: 2025-12-05
+tags: [infrastructure, database, cache]
+---
+
+# Redis Service
+
+## Overview
+In-memory data structure store, used for caching and message queuing.
+
+## Configuration
+- **Port:** 6379
+- **Config:** `/etc/redis/redis.conf`
+- **Log:** `/workspace/vai/logs/redis.log`
+- **Health Check:** TCP connection to localhost:6379 every 60s
+
+## Management Commands
+
+### Start
+\`\`\`bash
+docker exec services-container bash -c "/usr/local/bin/redis-server /etc/redis/redis.conf >> /workspace/vai/logs/redis.log 2>&1 &"
+\`\`\`
+
+### Stop
+\`\`\`bash
+docker exec services-container pkill -f "redis-server"
+\`\`\`
+
+### Check Status
+\`\`\`bash
+docker exec services-container redis-cli ping
+\`\`\`
+
+### View Logs
+\`\`\`bash
+docker exec services-container tail -f /workspace/vai/logs/redis.log
+\`\`\`
+
+## Auto-Recovery
+Health check runs every 60 seconds. On failure:
+1. Warning logged
+2. Restart command executed
+3. 5s wait for startup
+4. Health re-checked
+5. Alert sent if still failing
+
+## Dependencies
+None
+
+## Added By
+Service added via service-management skill on 2025-12-05
+```
+
+---
+
+## Completion Checklist
+
+- [ ] Service type determined (daemon or cron)
+- [ ] Service information gathered (name, command, ports, etc.)
+- [ ] Health check designed and tested locally
+- [ ] Restart command created and tested
+- [ ] system-config.json updated and validated
+- [ ] docker-compose.yml updated if needed
+- [ ] Installation script created if needed
+- [ ] Service tested locally in dev environment
+- [ ] Changes committed to git
+- [ ] Configuration deployed to VPS
+- [ ] Service started on VPS
+- [ ] Health checks verified on VPS (3+ cycles)
+- [ ] Service documentation created
+- [ ] User informed of service availability
+
+---
+
+## Rollback Procedure
+
+**If service fails in production:**
+
+1. **Restore previous system-config.json:**
+```bash
+scp -i /home/devuser/ai-global/config/ssh/id_ed25519_container \
+    -o UserKnownHostsFile=/home/devuser/ai-global/config/ssh/known_hosts \
+    /workspace/agent-infrastructure/config/system-config.json.backup \
+    root@31.97.226.160:/workspace/agent-infrastructure/config/system-config.json
+```
+
+2. **Stop the failed service:**
+```bash
+ssh -i /home/devuser/ai-global/config/ssh/id_ed25519_container \
+    -o UserKnownHostsFile=/home/devuser/ai-global/config/ssh/known_hosts \
+    root@31.97.226.160 "docker exec services-container pkill -f 'service-name'"
+```
+
+3. **Remove from crontab if cron job:**
+```bash
+ssh -i /home/devuser/ai-global/config/ssh/id_ed25519_container \
+    -o UserKnownHostsFile=/home/devuser/ai-global/config/ssh/known_hosts \
+    root@31.97.226.160 "docker exec services-container crontab -l | grep -v 'service-name' | docker exec -i services-container crontab -"
+```
+
+4. **Revert docker-compose if changed:**
+```bash
+cd /workspace/agent-infrastructure
+git revert HEAD
+git push
+ssh root@31.97.226.160 "cd /workspace/agent-infrastructure/docker && git pull && docker compose up -d"
+```
