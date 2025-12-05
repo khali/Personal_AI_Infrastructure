@@ -71,6 +71,20 @@ async function main() {
 
     console.error(`✅ Read ${coreContent.length} characters from CORE SKILL.md (Personalized for ${engineerName} & ${daName})`);
 
+    // Load additional Vai-specific operational context if available
+    let additionalContext = '';
+    const vaiContextPath = '/workspace/khali-obsidian-vault/ai-context/vai/vai-operational-protocols.md';
+
+    if (existsSync(vaiContextPath)) {
+      try {
+        const vaiContent = readFileSync(vaiContextPath, 'utf-8');
+        additionalContext = `\n\n---\n\n## VAI OPERATIONAL PROTOCOLS (Vai-Specific Context)\n\nLoaded from ${vaiContextPath}:\n\n---\n${vaiContent}\n---`;
+        console.error(`✅ Loaded vai-operational-protocols.md (${vaiContent.length} characters)`);
+      } catch (e) {
+        console.error(`⚠️ Could not load vai-operational-protocols.md:`, e);
+      }
+    }
+
     // Output the CORE content as a system-reminder
     // This will be injected into Claude's context at session start
     const message = `<system-reminder>
@@ -84,7 +98,7 @@ The following context has been loaded from ${coreSkillPath}:
 ${coreContent}
 ---
 
-This context is now active for this session. Follow all instructions, preferences, and guidelines contained above.
+This context is now active for this session. Follow all instructions, preferences, and guidelines contained above.${additionalContext}
 </system-reminder>`;
 
     // Write to stdout (will be captured by Claude Code)

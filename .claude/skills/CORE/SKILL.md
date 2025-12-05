@@ -159,7 +159,9 @@ COMPLETED: [12 words max - drives voice output - REQUIRED]
 - Minor updates (typos, links, metadata)
 - Technical decisions with clear rationale
 
-**Full protocols:** See `/workspace/khali-obsidian-vault/ai-context/vai/vai-knowledge-management.md`
+**Full protocols:**
+- **Operational protocols** (AUTO-LOADED at session start): `/workspace/khali-obsidian-vault/ai-context/vai/vai-operational-protocols.md`
+- **Knowledge management**: `/workspace/khali-obsidian-vault/ai-context/vai/vai-knowledge-management.md`
 
 ---
 
