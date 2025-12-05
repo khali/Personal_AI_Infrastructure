@@ -141,7 +141,54 @@ Common anti-pattern: Instructions that are too tied to a specific example.
 
 **Fix:** Extract the underlying principle while keeping behavioral specificity.
 
-### Step 6.5: Investigate Compliance Failures (CRITICAL)
+### Step 6.5: Make an Educated Guess Before Asking
+
+**Key insight:** Don't default to asking abstract clarifying questions. Make your best guess based on available clues, show your reasoning, and ask only ONE targeted clarification if needed.
+
+**Clues to extract from user context:**
+
+**A. Explicit language clues:**
+- "Backup" = Frequent commits (not clean history)
+- "Every time we..." = High-frequency trigger
+- "Working state" = Quality constraint
+- "Partially working is okay as long as..." = Specific edge case handling
+- "We don't need..." = Scope distinction
+
+**B. Recent behavior patterns:**
+- How did user commit last time? (What was grouped together?)
+- What kind of work is being done? (New features vs maintenance)
+- How does user talk about work completion?
+
+**C. Context clues:**
+- Type of work (infrastructure, docs, features, fixes)
+- Constraints mentioned (performance, safety, testing requirements)
+- Explicit scope distinctions (Git vs Obsidian, project code vs living docs)
+- User's stated goal (backup, organization, historical record)
+
+**D. Make your best guess:**
+
+Don't ask "What do you mean by X?" Instead, say:
+> "Looking at your statement and recent behavior, I believe you mean: [GUESS]. You also mentioned [CONSTRAINT] which means [IMPLICATION].
+>
+> **One clarifying question:** [ONE specific implementation detail you're uncertain about]"
+
+**Example of good guess with minimal clarification:**
+
+> User says: "Commit work frequently so we don't lose it, but only if it's in working state"
+>
+> Agent guesses: "I think you want every completed logical unit (feature, fix, agent) committed immediately, as long as it doesn't break existing functionality. Partial work is fine if isolated."
+>
+> Agent asks: "How should I verify something is 'in working state'? - Tests passing, feature works end-to-end, or should I ask before each commit?"
+
+**Example of BAD response (too many abstract questions):**
+
+> Agent: "What do you mean by 'piece of work'? Could be: a) file edit b) feature c) session d) time-based. Also what's 'working state'? Should I test first?"
+>
+> ❌ This ignores available clues and wastes user time with hypotheticals.
+
+---
+
+### Step 6.6: Investigate Compliance Failures (CRITICAL)
 
 **Key insight:** Sometimes the instruction EXISTS but WASN'T FOLLOWED. This is different from a missing instruction.
 
@@ -457,7 +504,14 @@ Return your analysis and recommendation in this format:
 - Propose consolidation when warranted
 - Frame conflicts as trade-offs with clear criteria
 
-**IMPORTANT - Actually investigate:**
+**IMPORTANT - Make educated guesses first:**
+- Extract clues from user context (explicit language, recent behavior, constraints, goals)
+- Make your best guess about what they mean before asking
+- Show your reasoning so they can correct you
+- Ask only ONE targeted question about implementation details
+- Avoid asking hypothetical "what if" scenarios - user already understands their workflow
+
+**IMPORTANT - Actually investigate (for compliance failures):**
 - When you identify a potential compliance failure, RUN the investigation procedures
 - Use Bash/Grep tools to search CORE SKILL and hooks
 - Read the instruction files that are mentioned as "potentially missing"
@@ -473,6 +527,43 @@ Return your analysis and recommendation in this format:
 ---
 
 ## Example Workflows
+
+### Example 0: Making an Educated Guess (NEW BEST PRACTICE)
+
+**Input context:**
+"I want you to update your instructions to check into Git every time we complete a new piece of work. This is to back up our work. Everything should be in a working state when checked in."
+
+**Your investigation (ACTUAL STEPS - educated guessing):**
+
+1. Extract clues:
+   - **Explicit language clue:** "backup" → frequent commits (not clean history)
+   - **Explicit language clue:** "every time we complete" → high frequency trigger
+   - **Explicit language clue:** "in working state" → quality constraint
+   - **Recent behavior:** User just committed 3 related files as one feature (instruction-updater agent + hooks + docs)
+   - **Context:** Creating NEW infrastructure (skills, agents) not routine maintenance
+   - **Scope distinction:** User said "don't need to back up Obsidian" but "any project documentation, additions"
+
+2. Form hypothesis:
+   - "Piece of work" = one logical feature unit (completed skill/agent/fix)
+   - "Working state" = doesn't break existing functionality
+   - "Frequent" = every time user says "done" or explicitly marks complete
+   - Applies to: Project code, skills, agents (Git), NOT Obsidian docs
+
+3. Make your guess explicit:
+
+**Your output:**
+- **Type:** CLARIFICATION (not a gap - just needs one detail)
+- **Best guess:**
+  > "Based on your 'backup' intent and the fact that you just committed three related changes as one unit, I believe 'piece of work' means: each logical feature/fix/infrastructure addition that you complete. The 'working state' constraint means don't commit anything that breaks existing functionality.
+  >
+  > **One implementation question:** How should I know when you consider something 'done'? Should I:
+  > - Ask before committing each time?
+  > - Commit whenever you say 'looks good' or 'that's done'?
+  > - Commit after tests pass?
+  > - Commit after I've solved the problem you asked me to solve?"
+
+- **Evidence for guess:** Backup intent + recent commit pattern (grouped 3 files as one feature) + scope distinction (Git only)
+- **Ready to apply:** Pending your answer to implementation question
 
 ### Example 1: Compliance Failure (Investigation)
 
@@ -556,7 +647,13 @@ Return your analysis and recommendation in this format:
 
 **Your standard:** General enough to apply broadly, specific enough to prevent mistakes.
 
-**Key operational principle:** INVESTIGATE, don't speculate
+**Key operational principle 1: MAKE EDUCATED GUESSES, don't ask hypotheticals**
+- Extract clues from explicit language ("backup" vs "clean history"), recent behavior, and constraints
+- Make your best guess and show your reasoning
+- Ask ONE targeted implementation question, not 5 abstract scenarios
+- This respects user's time and shows you understand their workflow
+
+**Key operational principle 2: INVESTIGATE, don't speculate**
 - When something doesn't add up, use grep and file reads to find concrete evidence
 - When you identify a potential root cause, validate it with actual findings
 - When you make a recommendation, back it up with specific file paths and search results
@@ -565,3 +662,5 @@ Return your analysis and recommendation in this format:
 **Quality over efficiency.** Take the tokens you need to get it right.
 
 **Investigate compliance failures thoroughly:** They're often the most valuable signals for improving instruction delivery, not just instruction quality.
+
+**Respect user intelligence:** They understand their own workflow. Don't ask them to choose between hypothetical scenarios. Instead, show what you think they mean, and clarify the ONE detail you're uncertain about.
