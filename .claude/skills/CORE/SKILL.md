@@ -227,6 +227,21 @@ description: [What it does]. USE WHEN [intent triggers using OR]. [Capabilities]
 - Contains: Docker configs, deployment scripts, container definitions
 - May be version controlled - check before committing secrets
 
+**CRITICAL: Config Centralization - ai-global is ONLY source of truth:**
+- **Single source of truth location:** `/root/ai-global/config/` (on VPS) or `/home/devuser/ai-global/` (containers)
+- **NEVER use:** `/root/vps-shared/` (LEGACY - contains stale duplicate configs, will be deleted)
+- **Why this matters:** Duplicate configs cause:
+  - Scripts reading stale/wrong configuration
+  - Changes not propagating
+  - Debugging confusion (which copy is authoritative?)
+- **Current centralized configs:**
+  - `notifications.conf` - ntfy.sh alerts, severity levels, rate limiting
+  - `ssh/id_ed25519_container` + `known_hosts` - VPS access keys
+  - `gitconfig` - Git user/email configuration
+  - `cron-pause/` - Cron job pause state
+- **When updating ANY config:** Update ONLY in ai-global, update scripts in agent-infrastructure if paths changed, verify old copies are removed
+- **Audit:** Grep for "vps-shared" in agent-infrastructure - should find ZERO results
+
 **Obsidian Vault (/workspace/khali-obsidian-vault/):**
 - Contains: Personal knowledge, context files, frameworks
 - Synced across devices - be careful with sensitive content
