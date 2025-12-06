@@ -122,6 +122,83 @@ Still failing: Notify alerts topic
 - ❌ **WRONG**: Cron pause files in `/var/run/cron-pause/` (lost on rebuild)
 - ✅ **CORRECT**: SSH keys in `/home/devuser/ai-global/config/ssh/` (persistent)
 - ✅ **CORRECT**: VPS host crontab tracked in git + install script (rebuild-resilient)
+
+### Principle 6A: ai-global Path Differences (CRITICAL)
+
+**PROBLEM:** The ai-global Docker volume has **different paths** depending on execution context. Using the wrong path causes "file not found" errors.
+
+**Path mapping:**
+
+| Execution context | ai-global path | When you use this |
+|-------------------|----------------|-------------------|
+| **Inside containers** (services, vai, agents) | `/home/devuser/ai-global/` | Most common - installing services from services-container, running agents |
+| **VPS host** (SSH to root@31.97.226.160) | `/root/ai-global/` | Rare - host cron jobs, host-level monitoring scripts |
+
+**How to know which path to use:**
+
+1. **Are you working inside a container?** → Use `/home/devuser/ai-global/`
+   - Running commands in services-container, vai-container, agents-container
+   - Installing cron jobs that run via container crontab
+   - Writing scripts that execute inside containers
+   - **This is 95% of service installations**
+
+2. **Are you working on VPS host directly?** → Use `/root/ai-global/`
+   - SSH'd to VPS host as root
+   - Installing VPS host cron jobs (host crontab, not container crontab)
+   - Writing scripts that run directly on VPS host (not in containers)
+   - **Rare - only for host-level monitoring needing Docker CLI access**
+
+**Real-world examples:**
+
+| Service | Runs where | ai-global path | Why |
+|---------|------------|----------------|-----|
+| minio-sync cron job | services-container | `/home/devuser/ai-global/` | Container cron job |
+| disk-usage-monitor | VPS host | `/root/ai-global/` | Needs Docker CLI on host |
+| cron pause files | services-container | `/home/devuser/ai-global/config/cron-pause/` | Checked by container scripts |
+| SSH keys | Both contexts | Auto-detect or both paths work | Volume mounted in both |
+
+**When scripts need to work in both contexts:**
+
+If a script might run on VPS host OR in containers, use auto-detection:
+
+```bash
+# Auto-detect ai-global location
+if [[ -d "/root/ai-global" ]]; then
+    AI_GLOBAL="/root/ai-global"
+else
+    AI_GLOBAL="/home/devuser/ai-global"
+fi
+
+STATE_FILE="$AI_GLOBAL/config/monitoring/my-state"
+```
+
+**Decision tree for service installation:**
+
+```
+Where does this service need to run?
+├─ Inside container (most common)
+│   ├─ Use container path: /home/devuser/ai-global/
+│   └─ Install from services-container
+│
+└─ On VPS host (rare)
+    ├─ Does it need Docker CLI? → YES → Host cron job required
+    │   ├─ Use host path: /root/ai-global/
+    │   ├─ SSH to VPS host to install
+    │   └─ Add to docker/host/vps-host-cron (tracked in git)
+    │
+    └─ Does it need Docker CLI? → NO → Use container instead
+        └─ Install in services-container with container path
+```
+
+**Common mistakes:**
+
+| Mistake | Symptom | Fix |
+|---------|---------|-----|
+| Using `/home/devuser/ai-global/` in VPS host script | "No such file or directory" | Change to `/root/ai-global/` or add auto-detection |
+| Using `/root/ai-global/` in container script | "No such file or directory" | Change to `/home/devuser/ai-global/` |
+| Assuming path is same everywhere | Intermittent failures | Check execution context, use correct path |
+
+**Key takeaway:** Always ask "Where is this script running?" before writing ai-global paths in configuration.
 </essential_principles>
 
 <intake>
