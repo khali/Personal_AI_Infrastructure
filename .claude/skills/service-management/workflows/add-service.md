@@ -216,6 +216,58 @@ Add to `cron_jobs` section:
 
 **CRITICAL:** Log path MUST use `/workspace/vai/logs/cron/` prefix (not `/workspace/vai/logs/` directly). This matches where cron-wrapper.sh writes logs.
 
+### Add Service Discovery Metadata
+
+**For agent-accessible services**, add `usage` metadata for service discovery via `/vai:services`:
+
+```json
+"usage": {
+  "command": "service-command [OPTIONS] ARGS",
+  "options": [
+    "--option1: Description of option 1",
+    "--option2: Description of option 2"
+  ],
+  "examples": [
+    "service-command 'example 1'",
+    "service-command --option1 'example 2'"
+  ],
+  "documentation": "/path/to/detailed/docs.md"
+}
+```
+
+**Example for Telegram service:**
+```json
+"telegram": {
+  "enabled": true,
+  "config_file": "/home/devuser/ai-global/config/telegram.conf",
+  "script_path": "/usr/local/bin/send-telegram",
+  "description": "Send Telegram messages from agents",
+  "usage": {
+    "command": "send-telegram [OPTIONS] TITLE MESSAGE",
+    "options": [
+      "--success: Success notification (green check)",
+      "--urgent: Urgent alert (red alert)"
+    ],
+    "examples": [
+      "send-telegram 'Task Complete' 'Deployment finished'",
+      "send-telegram --success 'Build' 'All tests passed'"
+    ],
+    "documentation": "/workspace/agent-infrastructure/agent-infra-docs/TELEGRAM-NOTIFICATIONS.md"
+  }
+}
+```
+
+**Why add usage metadata:**
+- Agents can discover services via `/vai:services list`
+- Get usage details via `/vai:services <name>`
+- Shown at session start in agent-infrastructure project
+- Creates self-documenting service registry
+
+**When to add usage metadata:**
+- ✅ Services that agents invoke directly (notification services, utilities)
+- ✅ Background services with management commands (e.g., "redis-cli")
+- ❌ Pure background daemons with no agent interaction (e.g., internal cron jobs)
+
 **What you get for free:**
 - ✅ Automatic logging to job-specific log file
 - ✅ Centralized error logging to `/workspace/vai/logs/cron/cron-errors.log`
