@@ -83,6 +83,45 @@ Still failing: Notify alerts topic
 - Stop: API shutdown + create `/var/run/manual-stop/<service-name>.stopped`
 - Start: Remove stop marker + run restart_cmd
 - Use `manage-service.sh stop/start`
+
+### Principle 6: Persistent Mounts and Storage Strategy
+
+**CRITICAL:** Understanding which volumes persist across container rebuilds determines where to store infrastructure work.
+
+**Persistent volumes (survive container rebuilds):**
+- **ai-global** - Mounted at `/home/devuser/ai-global/` in containers
+  - SSH keys, credentials, global configs
+  - Docker named volume, persists across container recreation
+- **y-home** - Mapped to `/home/devuser/` in containers
+  - User home directory files
+  - Persists across container rebuilds (not documented in docker-compose but exists on VPS)
+
+**Non-persistent locations (lost on container rebuild):**
+- `/tmp/` - Ephemeral, cleared on restart
+- `/var/run/` - Runtime state, cleared on restart
+- Container-specific locations outside mounted volumes
+
+**Storage decision criteria:**
+
+| Type of work | Storage location | Why |
+|--------------|------------------|-----|
+| Scripts tracked in git | `/workspace/agent-infrastructure/scripts/` | Git repo provides persistence, deployed to VPS |
+| Configs tracked in git | `/workspace/agent-infrastructure/config/` or `/workspace/agent-infrastructure/docker/` | Git-tracked, version controlled |
+| VPS host crontab | `/workspace/agent-infrastructure/docker/host/vps-host-cron` (git) → deployed to VPS via `crontab` command | Git-tracked source, crontab command installs to VPS host |
+| Runtime configs (credentials, keys) | `/home/devuser/ai-global/config/` | Persistent volume, survives rebuilds |
+| Temporary state | `/tmp/` or `/var/run/` | OK to lose on rebuild |
+
+**Why this matters:**
+- Work stored only in `/var/run/` or `/tmp/` is lost on container rebuild
+- Git-tracked work in `/workspace/agent-infrastructure/` survives via version control
+- Runtime configs in `ai-global` persist automatically
+- VPS host crontab must be tracked in git AND installed via script for disaster recovery
+
+**Examples:**
+- ✅ **CORRECT**: Cron pause files in `/home/devuser/ai-global/config/cron-pause/` (persistent)
+- ❌ **WRONG**: Cron pause files in `/var/run/cron-pause/` (lost on rebuild)
+- ✅ **CORRECT**: SSH keys in `/home/devuser/ai-global/config/ssh/` (persistent)
+- ✅ **CORRECT**: VPS host crontab tracked in git + install script (rebuild-resilient)
 </essential_principles>
 
 <intake>
