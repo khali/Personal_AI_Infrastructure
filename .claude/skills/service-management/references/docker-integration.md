@@ -212,16 +212,38 @@ All containers have access to these volumes:
    ```yaml
    - /workspace:/workspace:rw
    ```
+   - **Persistence:** Bind mount to VPS host `/workspace/`
+   - **Survives:** Container rebuilds (host filesystem)
+   - **Use for:** Git repositories, source code, deployment scripts
 
-2. **/home/devuser** - User home directory
+2. **/home/devuser** - User home directory (y-home volume)
    ```yaml
    - /home/devuser:/home/devuser:rw
    ```
+   - **Persistence:** PERSISTENT - survives container rebuilds
+   - **Mapped from:** y-home Docker volume on VPS
+   - **Survives:** Container rebuilds (Docker volume)
+   - **Use for:** User configs, development files
 
 3. **ai-global** - Shared configuration (credentials, SSH keys)
    ```yaml
    - ai-global:/home/devuser/ai-global:rw
    ```
+   - **Persistence:** PERSISTENT - survives container rebuilds
+   - **Type:** Docker named volume
+   - **Survives:** Container rebuilds, VPS reboots (Docker volume)
+   - **Use for:** Credentials, SSH keys, global configs, cron pause state
+   - **Examples:**
+     - `/home/devuser/ai-global/config/ssh/` - SSH keys
+     - `/home/devuser/ai-global/config/cron-pause/` - Cron pause files
+     - `/home/devuser/ai-global/config/notifications.conf` - Alert configs
+
+**CRITICAL:** Only ai-global and y-home (mapped to /home/devuser) are persistent Docker volumes. Work stored in `/tmp/` or `/var/run/` is LOST on container rebuild.
+
+**Storage strategy:**
+- **Git-tracked work:** `/workspace/agent-infrastructure/` (survives via version control)
+- **Runtime configs:** `/home/devuser/ai-global/config/` (survives via persistent volume)
+- **Temporary state:** `/tmp/` or `/var/run/` (acceptable to lose)
 
 ### Adding Service-Specific Volumes
 
