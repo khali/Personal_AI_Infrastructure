@@ -376,7 +376,24 @@ docker exec services-container bash /workspace/agent-infrastructure/scripts/inst
 
 ## Step 8: Add Cron Job to Crontab (for cron jobs)
 
-**IMPORTANT:** All cron jobs MUST use the cron-wrapper.sh pattern for standardized logging, pause/resume, and error handling.
+**CRITICAL DECISION:** Where does this cron job run?
+
+### Option A: Inside services-container (most cron jobs)
+**Use when:** Job doesn't need Docker CLI access, runs containerized tools
+**Crontab file:** `/workspace/agent-infrastructure/docker/services/minio-bisync-cron`
+**Pattern:** MUST use cron-wrapper.sh
+
+### Option B: On VPS host (rare, special cases)
+**Use when:** Job needs Docker CLI to inspect/manage containers, images, volumes
+**Examples:** disk-usage-monitor (inspects Docker), container orchestration
+**Crontab file:** `/workspace/agent-infrastructure/docker/host/vps-host-cron`
+**Installation:** Manual via setup script (see below)
+
+---
+
+### For Container Cron Jobs (Option A - Most Common)
+
+**IMPORTANT:** All container cron jobs MUST use the cron-wrapper.sh pattern for standardized logging, pause/resume, and error handling.
 
 **Cron wrapper pattern:**
 ```bash
@@ -438,6 +455,60 @@ docker exec services-container tail -20 /var/log/cron/cron-wrapper.log | grep "b
 - `manage-service.sh` creates pause files in: `/var/run/cron-pause/`
 
 Until this is fixed, pause/resume may not work correctly. Use the cron-wrapper.sh path for now.
+
+---
+
+### For Host Cron Jobs (Option B - Special Cases Only)
+
+**When to use:** Job needs Docker CLI access to inspect containers, images, volumes, or manage Docker itself.
+
+**Example:** disk-usage-monitor (inspects orphaned images, volumes, build cache)
+
+**Steps:**
+
+1. **Edit the host crontab file:**
+```bash
+vim /workspace/agent-infrastructure/docker/host/vps-host-cron
+```
+
+2. **Add new entry (direct command, NO cron-wrapper):**
+```bash
+# Disk usage monitoring - runs hourly (needs Docker CLI)
+0 * * * * /workspace/agent-infrastructure/scripts/monitoring/disk-usage-monitor.sh >> /workspace/vai/logs/cron/disk-usage-monitor.log 2>&1
+```
+
+**CRITICAL:** Host cron jobs do NOT use cron-wrapper.sh because:
+- They run on VPS host (cron-wrapper is in containers)
+- They need Docker CLI (containers don't have it)
+- Logging is handled directly with `>>` redirect
+
+3. **Commit the host crontab file:**
+```bash
+git add docker/host/vps-host-cron
+git commit -m "feat: Add host cron job for X"
+```
+
+4. **Deploy to VPS (must be done manually):**
+```bash
+# Copy files to VPS
+scp -i ~/.ssh/id_ed25519_container \
+    docker/host/vps-host-cron \
+    root@31.97.226.160:/workspace/agent-infrastructure/docker/host/vps-host-cron
+
+scp -i ~/.ssh/id_ed25519_container \
+    scripts/setup/install-host-crontab.sh \
+    root@31.97.226.160:/workspace/agent-infrastructure/scripts/setup/install-host-crontab.sh
+
+# Install on VPS host
+ssh root@31.97.226.160 "bash /workspace/agent-infrastructure/scripts/setup/install-host-crontab.sh"
+```
+
+5. **Verify installation:**
+```bash
+ssh root@31.97.226.160 "crontab -l | grep your-job-name"
+```
+
+**Disaster Recovery:** After VPS rebuild, run install-host-crontab.sh to restore all host cron jobs.
 
 ---
 
