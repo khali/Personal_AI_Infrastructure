@@ -44,11 +44,11 @@ Use the Skill tool with skill name (no path needed)
 Commands are located in `/home/devuser/ai-global/claude/commands/` (symlinked from `~/.claude/commands/`).
 
 **Available PAI commands:**
-- `/vai:update-instruction` - Analyze and update agent instructions (launches instruction-updater sub-agent)
+- `/vai:improve-behavior` - Improve Vai's behavior through the right mechanism (instructions, skills, hooks, subagents, or slash commands)
 
 **Invoke commands:**
 ```
-Use the SlashCommand tool with command name (e.g., "/vai:update-instruction")
+Use the SlashCommand tool with command name (e.g., "/vai:improve-behavior")
 ```
 
 ### How to Use Hooks
@@ -63,7 +63,7 @@ Hooks are located in `/home/devuser/ai-global/claude/hooks/` (symlinked from `~/
 Sub-agents are located in `/home/devuser/ai-global/claude/agents/` (symlinked from `~/.claude/agents/`).
 
 **Available sub-agents:**
-- `instruction-updater` - Specialist for analyzing and updating agent instructions
+- `improve-behavior` - Specialist for improving behavior through the right mechanism (triages between instructions, skills, hooks, subagents, slash commands)
 
 **Invoke sub-agents:**
 ```
@@ -81,10 +81,15 @@ Use the Task tool with subagent_type parameter
 - Always check impact across all three surfaces
 - Test in actual deployment context (Docker, systemd services)
 
-### When Updating Instructions
+### When Improving Behavior
 
-- Use `/vai:update-instruction` slash command
-- Sub-agent will analyze context and propose updates
+- Use `/vai:improve-behavior` slash command
+- Sub-agent will TRIAGE the request to determine the right mechanism:
+  - **Instructions** - For behavioral patterns and protocols
+  - **Skills** - For domain expertise and complex workflows
+  - **Hooks** - For automatic enforcement
+  - **Subagents** - For specialized delegation
+  - **Slash Commands** - For user convenience shortcuts
 - Follow tool-specific file policy (this file should only contain Claude Code-specific content)
 
 ---
