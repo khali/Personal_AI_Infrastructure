@@ -100,8 +100,11 @@ git rev-parse --show-toplevel  # Verify repo root
   - agent-observability - Real-time event monitoring
   - create-skill - Meta-skill for skill creation
   - fabric - Daniel Miessler's Fabric patterns
-  - setup-instruction-updater - Bootstrap instruction infrastructure
-  - update-agent-instructions - (being migrated to global)
+
+### Agents
+- Directory: `/workspace/PAI/.claude/agents/`
+- Active agents:
+  - improve-behavior - Behavior improvement specialist (triages between instructions, skills, hooks, subagents, slash commands)
 
 ## Documentation Sources
 
@@ -152,4 +155,4 @@ git rev-parse --show-toplevel  # Verify repo root
 - **PAI-specific**: `/workspace/PAI/.claude/PAI.md` (git: PAI submodule)
 
 ## Last Updated
-2025-12-05 - Initial structure document created as part of global instruction-updater skill implementation
+2025-12-08 - Replaced instruction-updater with improve-behavior (broader triage capability for instructions, skills, hooks, subagents, slash commands)
