@@ -2,20 +2,29 @@
 /**
  * PreToolUse Hook: Block Container Destruction
  *
- * INCIDENT: 2025-12-08 - Vai restarted vai-container without permission,
+ * INCIDENT 1: 2025-12-08 - Vai restarted vai-container without permission,
  * killing user's session and losing work.
  *
- * PURPOSE: Prevent agents from restarting, stopping, or removing the
- * vai or services containers - even via SSH to VPS.
+ * INCIDENT 2: 2025-12-08 - Vai attempted to rebuild containers via SSH
+ * despite user explicitly saying "do not rebuild containers".
+ * `docker compose build` was not in the blocklist.
+ *
+ * PURPOSE: Prevent agents from restarting, stopping, rebuilding, or removing
+ * the vai or services containers - even via SSH to VPS.
  *
  * BLOCKS:
- * - docker restart/stop/rm/kill vai|services
- * - docker compose restart/stop/down/rm vai|services
+ * - docker restart/stop/rm/kill/build vai|services
+ * - docker compose restart/stop/down/rm/build vai|services
  * - Same commands wrapped in SSH (the actual incident vector)
  *
  * WHY SSH MATTERS:
  * The original incident used: ssh root@vps "docker compose restart vai services"
  * Direct deny rules don't catch SSH-wrapped commands.
+ *
+ * WHY BUILD IS BLOCKED:
+ * - Running build from inside a container is conceptually wrong
+ * - Build is almost always followed by `up -d` which recreates containers
+ * - User explicitly told agent not to rebuild, but agent ignored instruction
  */
 
 interface PreToolUseInput {
@@ -70,10 +79,11 @@ function checkCommand(params: PreToolUseInput): PreToolUseResult {
   const command = (input.command as string) || "";
 
   // Protected containers - these are critical infrastructure
-  const protectedContainers = ['vai', 'services'];
+  // Include container name variants (with/without -container suffix)
+  const protectedContainers = ['vai', 'services', 'agents', 'vai-container', 'services-container', 'agents-container'];
 
-  // Destructive docker operations
-  const destructiveOps = ['restart', 'stop', 'rm', 'kill', 'down'];
+  // Destructive docker operations (including build - can't rebuild from inside container)
+  const destructiveOps = ['restart', 'stop', 'rm', 'kill', 'down', 'build'];
 
   // Pattern 1: Direct docker commands
   // e.g., "docker restart vai", "docker compose stop services"
@@ -90,9 +100,13 @@ function checkCommand(params: PreToolUseInput): PreToolUseResult {
   if (directDockerPattern.test(command) || composeDownPattern.test(command)) {
     const isViaSSH = command.includes('ssh ') || command.includes('ssh\t');
 
+    // Detect which operation was attempted
+    const isBuild = /docker\s+(?:compose\s+)?build/i.test(command);
+    const operation = isBuild ? 'rebuild' : 'restart/stop/remove';
+
     return {
       allow: false,
-      message: `⛔ BLOCKED: Cannot restart/stop/remove vai or services containers.
+      message: `⛔ BLOCKED: Cannot ${operation} vai or services containers.
 
 DETECTED COMMAND:
 ${command.length > 200 ? command.substring(0, 200) + '...' : command}
@@ -100,17 +114,20 @@ ${command.length > 200 ? command.substring(0, 200) + '...' : command}
 ${isViaSSH ? '⚠️  This was an SSH-wrapped command - same rules apply.\n' : ''}
 WHY THIS IS BLOCKED:
 • You are RUNNING INSIDE vai-container
-• Restarting/stopping it kills your session immediately
-• User loses all unsaved work and conversation context
+• ${isBuild
+    ? 'Rebuilding containers from inside is a conceptual error\n• Build is typically followed by `up -d` which recreates your container\n• Even if you ONLY build, you cannot apply changes without restart'
+    : 'Restarting/stopping it kills your session immediately\n• User loses all unsaved work and conversation context'}
 • This requires EXPLICIT user approval BEFORE execution
 
 WHAT TO DO INSTEAD:
-1. STOP and ASK: "I need to restart containers to apply changes. Is that OK?"
+1. STOP and ASK: "I need to ${isBuild ? 'rebuild and restart' : 'restart'} containers to apply changes. Is that OK?"
 2. WAIT for explicit "yes" from user
-3. If approved, USER can run the command manually
+3. If approved, USER can run the command manually from host
 4. Or user can grant one-time permission for you to run it
 
-INCIDENT REFERENCE: 2025-12-08 unauthorized container restart`
+INCIDENT REFERENCES:
+- 2025-12-08 unauthorized container restart
+- 2025-12-08 attempted rebuild despite user explicitly saying "do not rebuild"`
     };
   }
 
