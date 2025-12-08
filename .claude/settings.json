@@ -77,7 +77,16 @@
       "Bash(docker rm services)",
       "Bash(docker kill services)",
       "Bash(docker compose restart services)",
-      "Bash(docker compose stop services)"
+      "Bash(docker compose stop services)",
+      "Bash(docker build vai)",
+      "Bash(docker build services)",
+      "Bash(docker build agents)",
+      "Bash(docker compose build vai)",
+      "Bash(docker compose build services)",
+      "Bash(docker compose build agents)",
+      "Bash(docker compose build vai-container)",
+      "Bash(docker compose build services-container)",
+      "Bash(docker compose build agents-container)"
     ]
   },
   "enableAllProjectMcpServers": true,
