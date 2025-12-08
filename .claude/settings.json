@@ -63,13 +63,36 @@
       "Bash(dd if=/dev/zero of=/dev/sda)",
       "Bash(mkfs.ext4 /dev/sda)",
       "Bash( /dev/sda)",
-      "Bash(> /dev/sda)"
+      "Bash(> /dev/sda)",
+      "Bash(docker restart vai)",
+      "Bash(docker stop vai)",
+      "Bash(docker rm vai)",
+      "Bash(docker kill vai)",
+      "Bash(docker compose restart vai)",
+      "Bash(docker compose stop vai)",
+      "Bash(docker compose down)",
+      "Bash(docker compose rm vai)",
+      "Bash(docker restart services)",
+      "Bash(docker stop services)",
+      "Bash(docker rm services)",
+      "Bash(docker kill services)",
+      "Bash(docker compose restart services)",
+      "Bash(docker compose stop services)"
     ]
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [],
   "hooks": {
     "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PAI_DIR}/hooks/PreToolUse-block-container-destruction.ts"
+          }
+        ]
+      },
       {
         "matcher": "*",
         "hooks": [
