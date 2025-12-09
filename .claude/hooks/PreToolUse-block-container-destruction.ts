@@ -1,30 +1,19 @@
-#!/usr/bin/env npx ts-node
+#!/usr/bin/env bun
 /**
- * PreToolUse Hook: Block Container Destruction
+ * PreToolUse Hook: Block Dangerous Commands
  *
- * INCIDENT 1: 2025-12-08 - Vai restarted vai-container without permission,
- * killing user's session and losing work.
+ * INCIDENT HISTORY:
+ * - 2025-12-08: Vai restarted vai-container without permission (killed session)
+ * - 2025-12-08: Vai attempted rebuild despite "do not rebuild" constraint
+ * - 2025-12-09: Vai ran `docker compose restart vai` killing session AGAIN
+ *   Root cause: `docker compose up -d` and other patterns not caught
  *
- * INCIDENT 2: 2025-12-08 - Vai attempted to rebuild containers via SSH
- * despite user explicitly saying "do not rebuild containers".
- * `docker compose build` was not in the blocklist.
+ * PURPOSE: Prevent agents from running ANY command that could:
+ * 1. Kill the user's session (container restart, process kill, reboot)
+ * 2. Destroy infrastructure (rm -rf, disk wipe, format)
+ * 3. Damage the system (fork bomb, permission removal)
  *
- * PURPOSE: Prevent agents from restarting, stopping, rebuilding, or removing
- * the vai or services containers - even via SSH to VPS.
- *
- * BLOCKS:
- * - docker restart/stop/rm/kill/build vai|services
- * - docker compose restart/stop/down/rm/build vai|services
- * - Same commands wrapped in SSH (the actual incident vector)
- *
- * WHY SSH MATTERS:
- * The original incident used: ssh root@vps "docker compose restart vai services"
- * Direct deny rules don't catch SSH-wrapped commands.
- *
- * WHY BUILD IS BLOCKED:
- * - Running build from inside a container is conceptually wrong
- * - Build is almost always followed by `up -d` which recreates containers
- * - User explicitly told agent not to rebuild, but agent ignored instruction
+ * PHILOSOPHY: Defense in depth - catch ALL variations including SSH-wrapped
  */
 
 interface PreToolUseInput {
@@ -68,6 +57,13 @@ function readStdin(): Promise<string> {
   });
 }
 
+interface BlockedPattern {
+  pattern: RegExp;
+  category: string;
+  reason: string;
+  suggestion: string;
+}
+
 function checkCommand(params: PreToolUseInput): PreToolUseResult {
   const { tool, input } = params;
 
@@ -78,57 +74,228 @@ function checkCommand(params: PreToolUseInput): PreToolUseResult {
 
   const command = (input.command as string) || "";
 
-  // Protected containers - these are critical infrastructure
-  // Include container name variants (with/without -container suffix)
+  // ============================================================
+  // CATEGORY 1: Container Operations (Session Killers)
+  // ============================================================
+
   const protectedContainers = ['vai', 'services', 'agents', 'vai-container', 'services-container', 'agents-container'];
+  const containerPattern = protectedContainers.join('|');
 
-  // Destructive docker operations (including build - can't rebuild from inside container)
-  const destructiveOps = ['restart', 'stop', 'rm', 'kill', 'down', 'build'];
+  const containerPatterns: BlockedPattern[] = [
+    // Direct docker commands on protected containers
+    {
+      pattern: new RegExp(`docker\\s+(restart|stop|rm|kill)\\s+.*(${containerPattern})`, 'i'),
+      category: 'CONTAINER_DESTRUCTION',
+      reason: 'This would kill your active session inside vai-container',
+      suggestion: 'Ask user to run this manually from VPS host'
+    },
+    // docker compose with destructive ops on protected containers
+    {
+      pattern: new RegExp(`docker\\s+compose\\s+(restart|stop|rm|kill|build)\\s+.*(${containerPattern})`, 'i'),
+      category: 'CONTAINER_DESTRUCTION',
+      reason: 'This would kill/rebuild your active session',
+      suggestion: 'Ask user to run this manually from VPS host'
+    },
+    // docker compose down (affects ALL containers)
+    {
+      pattern: /docker\s+compose\s+down/i,
+      category: 'CONTAINER_DESTRUCTION',
+      reason: 'docker compose down stops ALL containers including vai',
+      suggestion: 'Ask user to run this manually from VPS host'
+    },
+    // docker compose up (recreates containers even without explicit names)
+    {
+      pattern: /docker\s+compose\s+up(?:\s|$)/i,
+      category: 'CONTAINER_DESTRUCTION',
+      reason: 'docker compose up recreates containers, killing your session',
+      suggestion: 'Ask user to run this manually from VPS host'
+    },
+    // docker compose with --build flag anywhere
+    {
+      pattern: /docker\s+compose\s+.*--build/i,
+      category: 'CONTAINER_DESTRUCTION',
+      reason: '--build flag rebuilds containers which requires restart',
+      suggestion: 'Ask user to run this manually from VPS host'
+    },
+    // systemctl restart docker (restarts ALL containers)
+    {
+      pattern: /systemctl\s+(restart|stop)\s+docker/i,
+      category: 'CONTAINER_DESTRUCTION',
+      reason: 'Restarting docker daemon kills ALL containers',
+      suggestion: 'Ask user to run this manually from VPS host'
+    },
+  ];
 
-  // Pattern 1: Direct docker commands
-  // e.g., "docker restart vai", "docker compose stop services"
-  const directDockerPattern = new RegExp(
-    `docker\\s+(?:compose\\s+)?(${destructiveOps.join('|')})\\s+.*\\b(${protectedContainers.join('|')})\\b`,
-    'i'
-  );
+  // ============================================================
+  // CATEGORY 2: System Reboot/Shutdown
+  // ============================================================
 
-  // Pattern 2: docker compose down (affects all containers)
-  const composeDownPattern = /docker\s+compose\s+down/i;
+  const systemPatterns: BlockedPattern[] = [
+    {
+      pattern: /\breboot\b/i,
+      category: 'SYSTEM_REBOOT',
+      reason: 'This would reboot the VPS, killing all sessions',
+      suggestion: 'Ask user if they really want to reboot'
+    },
+    {
+      pattern: /\bshutdown\b/i,
+      category: 'SYSTEM_SHUTDOWN',
+      reason: 'This would shut down the VPS',
+      suggestion: 'Ask user if they really want to shutdown'
+    },
+    {
+      pattern: /\binit\s+[06]\b/i,
+      category: 'SYSTEM_REBOOT',
+      reason: 'init 0/6 triggers shutdown/reboot',
+      suggestion: 'Ask user if they really want to reboot/shutdown'
+    },
+    {
+      pattern: /\bpoweroff\b/i,
+      category: 'SYSTEM_SHUTDOWN',
+      reason: 'This would power off the VPS',
+      suggestion: 'Ask user if they really want to power off'
+    },
+    {
+      pattern: /\bhalt\b/i,
+      category: 'SYSTEM_SHUTDOWN',
+      reason: 'This would halt the VPS',
+      suggestion: 'Ask user if they really want to halt'
+    },
+  ];
 
-  // Check if command matches dangerous patterns
-  // This catches both direct commands AND SSH-wrapped commands
-  if (directDockerPattern.test(command) || composeDownPattern.test(command)) {
-    const isViaSSH = command.includes('ssh ') || command.includes('ssh\t');
+  // ============================================================
+  // CATEGORY 3: Process Killing (Session Killers)
+  // ============================================================
 
-    // Detect which operation was attempted
-    const isBuild = /docker\s+(?:compose\s+)?build/i.test(command);
-    const operation = isBuild ? 'rebuild' : 'restart/stop/remove';
+  const processPatterns: BlockedPattern[] = [
+    // pkill/killall targeting critical processes
+    {
+      pattern: /\b(pkill|killall)\s+(-9\s+)?(claude|mosh|tmux|node)/i,
+      category: 'PROCESS_KILL',
+      reason: 'This would kill your Claude Code session or terminal',
+      suggestion: 'Do not kill these processes - they are your session'
+    },
+    // kill -9 with signal
+    {
+      pattern: /\bkill\s+-9\s+/i,
+      category: 'PROCESS_KILL',
+      reason: 'kill -9 force-kills processes without cleanup',
+      suggestion: 'Be careful with kill -9 - verify the PID is not critical'
+    },
+  ];
 
-    return {
-      allow: false,
-      message: `⛔ BLOCKED: Cannot ${operation} vai or services containers.
+  // ============================================================
+  // CATEGORY 4: Destructive File Operations
+  // ============================================================
+
+  const filePatterns: BlockedPattern[] = [
+    // rm -rf on critical paths
+    {
+      pattern: /rm\s+(-[rf]+\s+)+\/(workspace|home|root|etc|var|usr)?\/?(\s|$|;|&|\|)/i,
+      category: 'DESTRUCTIVE_DELETE',
+      reason: 'This would delete critical system or workspace files',
+      suggestion: 'Be very specific about what to delete, never use rm -rf on root paths'
+    },
+    // rm -rf /* or rm -rf /
+    {
+      pattern: /rm\s+(-[rf]+\s+)+\/(\*|$|\s)/i,
+      category: 'DESTRUCTIVE_DELETE',
+      reason: 'This would delete the entire filesystem',
+      suggestion: 'NEVER run rm -rf on root paths'
+    },
+    // Disk wiping
+    {
+      pattern: /\bdd\s+.*if=\/dev\/(zero|random|urandom).*of=\/dev\/(sd|hd|nvme|vd)/i,
+      category: 'DISK_WIPE',
+      reason: 'This would wipe the disk',
+      suggestion: 'NEVER wipe disks without explicit user approval'
+    },
+    // Filesystem formatting
+    {
+      pattern: /\b(mkfs|mke2fs|mkfs\.\w+)\s+/i,
+      category: 'DISK_FORMAT',
+      reason: 'This would format a filesystem, destroying all data',
+      suggestion: 'NEVER format filesystems without explicit user approval'
+    },
+  ];
+
+  // ============================================================
+  // CATEGORY 5: Permission/Ownership Destruction
+  // ============================================================
+
+  const permissionPatterns: BlockedPattern[] = [
+    // chmod 000 or chmod -R on critical paths
+    {
+      pattern: /chmod\s+(-R\s+)?0{3}\s+\//i,
+      category: 'PERMISSION_DESTRUCTION',
+      reason: 'This would remove all permissions from system files',
+      suggestion: 'NEVER chmod 000 on root paths'
+    },
+    // chown -R to nobody/root on workspace
+    {
+      pattern: /chown\s+-R\s+(nobody|root).*\/(workspace|home)/i,
+      category: 'PERMISSION_DESTRUCTION',
+      reason: 'This would change ownership of critical directories',
+      suggestion: 'Be very careful with recursive chown'
+    },
+  ];
+
+  // ============================================================
+  // CATEGORY 6: Fork Bomb / Resource Exhaustion
+  // ============================================================
+
+  const resourcePatterns: BlockedPattern[] = [
+    // Classic fork bomb
+    {
+      pattern: /:\(\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;?\s*:/,
+      category: 'FORK_BOMB',
+      reason: 'This is a fork bomb that would crash the system',
+      suggestion: 'NEVER run fork bombs'
+    },
+    // Infinite loops that spawn processes
+    {
+      pattern: /while\s*\(?true\)?\s*;\s*do.*&.*done/i,
+      category: 'RESOURCE_EXHAUSTION',
+      reason: 'This infinite loop could exhaust system resources',
+      suggestion: 'Be careful with infinite loops that spawn background processes'
+    },
+  ];
+
+  // Combine all patterns
+  const allPatterns = [
+    ...containerPatterns,
+    ...systemPatterns,
+    ...processPatterns,
+    ...filePatterns,
+    ...permissionPatterns,
+    ...resourcePatterns,
+  ];
+
+  // Check command against all patterns
+  for (const blocked of allPatterns) {
+    if (blocked.pattern.test(command)) {
+      const isViaSSH = command.includes('ssh ') || command.includes('ssh\t');
+
+      return {
+        allow: false,
+        message: `⛔ BLOCKED [${blocked.category}]
 
 DETECTED COMMAND:
-${command.length > 200 ? command.substring(0, 200) + '...' : command}
+${command.length > 300 ? command.substring(0, 300) + '...' : command}
 
-${isViaSSH ? '⚠️  This was an SSH-wrapped command - same rules apply.\n' : ''}
-WHY THIS IS BLOCKED:
-• You are RUNNING INSIDE vai-container
-• ${isBuild
-    ? 'Rebuilding containers from inside is a conceptual error\n• Build is typically followed by `up -d` which recreates your container\n• Even if you ONLY build, you cannot apply changes without restart'
-    : 'Restarting/stopping it kills your session immediately\n• User loses all unsaved work and conversation context'}
-• This requires EXPLICIT user approval BEFORE execution
+${isViaSSH ? '⚠️  SSH-wrapped command detected - same rules apply.\n\n' : ''}REASON: ${blocked.reason}
 
-WHAT TO DO INSTEAD:
-1. STOP and ASK: "I need to ${isBuild ? 'rebuild and restart' : 'restart'} containers to apply changes. Is that OK?"
-2. WAIT for explicit "yes" from user
-3. If approved, USER can run the command manually from host
-4. Or user can grant one-time permission for you to run it
+SUGGESTION: ${blocked.suggestion}
 
-INCIDENT REFERENCES:
-- 2025-12-08 unauthorized container restart
-- 2025-12-08 attempted rebuild despite user explicitly saying "do not rebuild"`
-    };
+This hook exists because of multiple incidents where Vai killed the user's session.
+If you believe this is a false positive, ask the user for explicit approval.
+
+INCIDENT HISTORY:
+- 2025-12-08: Unauthorized container restart (killed session)
+- 2025-12-08: Attempted rebuild despite explicit constraint
+- 2025-12-09: AGAIN killed session with docker compose restart`
+      };
+    }
   }
 
   return { allow: true };
