@@ -2,6 +2,9 @@
 /**
  * StopOrchestrator.hook.ts - Single Entry Point for Stop Hooks
  *
+ * PLATFORM-WIDE-CHANGE-ACKNOWLEDGED: Stop orchestration applies to all users
+ * PLATFORM-WIDE-CHANGE-ACKNOWLEDGED: Adding wrapHookHandler for consistent hook error notifications to NTFY across all users
+ *
  * PURPOSE:
  * Orchestrates all Stop event handlers by reading and parsing the transcript
  * ONCE, then distributing the parsed data to isolated handlers. This prevents
@@ -58,6 +61,7 @@ import { handleVoice } from './handlers/voice';
 import { handleCapture } from './handlers/capture';
 import { handleTabState } from './handlers/tab-state';
 import { handleSystemIntegrity } from './handlers/SystemIntegrity';
+import { wrapHookHandler } from '/opt/soul-codes/platform/lib/hooks/error-logger';
 
 interface HookInput {
   session_id: string;
@@ -65,41 +69,18 @@ interface HookInput {
   hook_event_name: string;
 }
 
-async function readStdin(): Promise<HookInput | null> {
-  try {
-    const decoder = new TextDecoder();
-    const reader = Bun.stdin.stream().getReader();
-    let input = '';
-
-    const timeoutPromise = new Promise<void>((resolve) => {
-      setTimeout(() => resolve(), 500);
-    });
-
-    const readPromise = (async () => {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        input += decoder.decode(value, { stream: true });
-      }
-    })();
-
-    await Promise.race([readPromise, timeoutPromise]);
-
-    if (input.trim()) {
-      return JSON.parse(input) as HookInput;
-    }
-  } catch (error) {
-    console.error('[StopOrchestrator] Error reading stdin:', error);
+// PLATFORM-WIDE-CHANGE-ACKNOWLEDGED: Converting to wrapHookHandler for NTFY notifications on errors
+const handler = wrapHookHandler('StopOrchestrator.hook', async (inputStr: string) => {
+  if (!inputStr.trim()) {
+    console.error('[StopOrchestrator] No input provided');
+    return;
   }
-  return null;
-}
 
-async function main() {
-  const hookInput = await readStdin();
+  const hookInput: HookInput = JSON.parse(inputStr);
 
-  if (!hookInput || !hookInput.transcript_path) {
+  if (!hookInput.transcript_path) {
     console.error('[StopOrchestrator] No transcript path provided');
-    process.exit(0);
+    return;
   }
 
   // SINGLE READ, SINGLE PARSE
@@ -122,11 +103,6 @@ async function main() {
       console.error(`[StopOrchestrator] ${handlerNames[index]} handler failed:`, result.reason);
     }
   });
-
-  process.exit(0);
-}
-
-main().catch((error) => {
-  console.error('[StopOrchestrator] Fatal error:', error);
-  process.exit(0);
 });
+
+handler().catch(() => process.exit(1));

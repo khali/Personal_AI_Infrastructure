@@ -2,6 +2,9 @@
 /**
  * LoadContext.hook.ts - Inject CORE Skill into Claude's Context (SessionStart)
  *
+ * PLATFORM-WIDE-CHANGE-ACKNOWLEDGED: Session context loading applies to all users
+ * PLATFORM-WIDE-CHANGE-ACKNOWLEDGED: Adding wrapHookHandler for consistent hook error notifications to NTFY across all users
+ *
  * PURPOSE:
  * The foundational context injection hook. Reads the CORE SKILL.md and outputs
  * it as a <system-reminder> to stdout, which Claude Code captures and includes
@@ -56,6 +59,7 @@ import { join } from 'path';
 import { spawn } from 'child_process';
 import { getPaiDir } from './lib/paths';
 import { recordSessionStart } from './lib/notifications';
+import { wrapHookHandler } from '/opt/soul-codes/platform/lib/hooks/error-logger';
 
 async function getCurrentDate(): Promise<string> {
   try {
@@ -143,46 +147,46 @@ async function checkActiveProgress(paiDir: string): Promise<string | null> {
   }
 }
 
-async function main() {
-  try {
-    // Check if this is a subagent session - if so, exit silently
-    const claudeProjectDir = process.env.CLAUDE_PROJECT_DIR || '';
-    const isSubagent = claudeProjectDir.includes('/.claude/Agents/') ||
-                      process.env.CLAUDE_AGENT_TYPE !== undefined;
+// PLATFORM-WIDE-CHANGE-ACKNOWLEDGED: Converting to wrapHookHandler for NTFY notifications on errors
+const handler = wrapHookHandler('LoadContext.hook', async (_inputStr: string) => {
+  // Check if this is a subagent session - if so, exit silently
+  const claudeProjectDir = process.env.CLAUDE_PROJECT_DIR || '';
+  const isSubagent = claudeProjectDir.includes('/.claude/Agents/') ||
+                    process.env.CLAUDE_AGENT_TYPE !== undefined;
 
-    if (isSubagent) {
-      // Subagent sessions don't need PAI context loading
-      console.error('🤖 Subagent session - skipping PAI context loading');
-      process.exit(0);
-    }
+  if (isSubagent) {
+    // Subagent sessions don't need PAI context loading
+    console.error('🤖 Subagent session - skipping PAI context loading');
+    return;
+  }
 
-    // Record session start time for notification timing
-    recordSessionStart();
-    console.error('⏱️ Session start time recorded for notification timing');
+  // Record session start time for notification timing
+  recordSessionStart();
+  console.error('⏱️ Session start time recorded for notification timing');
 
-    const paiDir = getPaiDir();
-    const paiSkillPath = join(paiDir, 'skills/CORE/SKILL.md');
+  const paiDir = getPaiDir();
+  const paiSkillPath = join(paiDir, 'skills/CORE/SKILL.md');
 
-    // Verify PAI skill file exists
-    if (!existsSync(paiSkillPath)) {
-      console.error(`❌ PAI skill not found at: ${paiSkillPath}`);
-      process.exit(1);
-    }
+  // Verify PAI skill file exists
+  if (!existsSync(paiSkillPath)) {
+    console.error(`❌ PAI skill not found at: ${paiSkillPath}`);
+    throw new Error(`PAI skill not found at: ${paiSkillPath}`);
+  }
 
-    console.error('📚 Reading PAI core context from skill file...');
+  console.error('📚 Reading PAI core context from skill file...');
 
-    // Read the PAI SKILL.md file content
-    const paiContent = readFileSync(paiSkillPath, 'utf-8');
+  // Read the PAI SKILL.md file content
+  const paiContent = readFileSync(paiSkillPath, 'utf-8');
 
-    console.error(`✅ Read ${paiContent.length} characters from PAI SKILL.md`);
+  console.error(`✅ Read ${paiContent.length} characters from PAI SKILL.md`);
 
-    // Get current date/time to prevent confusion about dates
-    const currentDate = await getCurrentDate();
-    console.error(`📅 Current Date: ${currentDate}`);
+  // Get current date/time to prevent confusion about dates
+  const currentDate = await getCurrentDate();
+  console.error(`📅 Current Date: ${currentDate}`);
 
-    // Output the PAI content as a system-reminder
-    // This will be injected into Claude's context at session start
-    const message = `<system-reminder>
+  // Output the PAI content as a system-reminder
+  // This will be injected into Claude's context at session start
+  const message = `<system-reminder>
 PAI CORE CONTEXT (Auto-loaded at Session Start)
 
 📅 CURRENT DATE/TIME: ${currentDate}
@@ -194,25 +198,20 @@ ${paiContent}
 This context is now active for this session. Follow all instructions, preferences, and guidelines contained above.
 </system-reminder>`;
 
-    // Write to stdout (will be captured by Claude Code)
-    console.log(message);
+  // Write to stdout (will be captured by Claude Code)
+  console.log(message);
 
-    // Output success confirmation for Claude to acknowledge
-    console.log('\n✅ PAI Context successfully loaded...');
+  // Output success confirmation for Claude to acknowledge
+  console.log('\n✅ PAI Context successfully loaded...');
 
-    // Check for active progress files and display them
-    const activeProgress = await checkActiveProgress(paiDir);
-    if (activeProgress) {
-      console.log(activeProgress);
-      console.error('📋 Active work found from previous sessions');
-    }
-
-    console.error('✅ PAI context injected into session');
-    process.exit(0);
-  } catch (error) {
-    console.error('❌ Error in load-core-context hook:', error);
-    process.exit(1);
+  // Check for active progress files and display them
+  const activeProgress = await checkActiveProgress(paiDir);
+  if (activeProgress) {
+    console.log(activeProgress);
+    console.error('📋 Active work found from previous sessions');
   }
-}
 
-main();
+  console.error('✅ PAI context injected into session');
+});
+
+handler().catch(() => process.exit(1));
