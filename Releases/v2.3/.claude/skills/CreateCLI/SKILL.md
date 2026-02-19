@@ -1,6 +1,7 @@
+# PLATFORM-WIDE-CHANGE-ACKNOWLEDGED: Improved description with explicit natural-language trigger phrases for reliable skill activation
 ---
 name: CreateCLI
-description: Generate TypeScript CLIs. USE WHEN create CLI, build CLI, command-line tool. SkillSearch('createcli') for docs.
+description: Generate production-ready TypeScript CLIs with type safety, error handling, and CLI-First Architecture principles. USE WHEN user says 'create a CLI', 'build a command-line tool', 'make a CLI for X', 'add a CLI interface', 'I need a command-line utility', 'build a TypeScript CLI', or wants any terminal tool with text-in/text-out interface and JSON support.
 ---
 
 ## Customization
