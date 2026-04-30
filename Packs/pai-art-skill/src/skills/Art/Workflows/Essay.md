@@ -383,7 +383,23 @@ Before generating, verify:
 |-----------|------|-------------|
 | "fast", "quick", "draft" | `--model nano-banana` | Faster iteration, slightly lower quality |
 | (default), "best", "high quality" | `--model nano-banana-pro` | Best quality + text rendering (recommended) |
+| "openai", "editorial", "concept art" | `--model gpt-image-2` | OpenAI-native editorial image when text precision is not central |
 | "flux", "stylistic variety" | `--model flux` | Different aesthetic, stylistic variety |
+
+#### Decision Checklist
+
+Answer before choosing a model:
+1. Is this mostly editorial/concept illustration rather than a labeled graphic?
+2. Does the image need readable text inside the image?
+3. Does it need reference-image consistency or recurring identity?
+4. Does it need transparency or thumbnail-style compositing?
+5. Is this a rough draft or a final asset?
+
+Choose from the answers:
+- `Yes` to 1, `No` to 2-4 -> `gpt-image-2`
+- `Yes` to 2 or 3 -> `nano-banana-pro`
+- `Yes` to 4 -> avoid `gpt-image-2`
+- `Yes` to 5 for speed -> `nano-banana`
 
 #### Size Selection
 
@@ -412,6 +428,8 @@ Before generating, verify:
 | "variations", "options" | `--creative-variations 3` | Generates multiple versions |
 
 ### Default Model: nano-banana-pro
+
+Use `gpt-image-2` instead when the image is a pure editorial/concept illustration with little or no in-image text and you want to keep the workflow inside OpenAI. Stay with `nano-banana-pro` if typography, labels, or reference-driven consistency matter.
 
 ### 🚨 CRITICAL: Always Output to Downloads First
 
@@ -536,7 +554,7 @@ bun ~/.claude/skills/CORE/Tools/RemoveBg.ts image1.png image2.png image3.png
 | Model | Command | When to Use |
 |-------|---------|-------------|
 | **flux** | `--model flux --size 1:1 --remove-bg` | Maximum quality, more detail |
-| **gpt-image-1** | `--model gpt-image-1 --size 1024x1024 --remove-bg` | Different interpretation |
+| **gpt-image-2** | `--model gpt-image-2 --size 1024x1024` | OpenAI-native editorial interpretation; avoid for precise text or transparency |
 
 ### Immediately Open
 

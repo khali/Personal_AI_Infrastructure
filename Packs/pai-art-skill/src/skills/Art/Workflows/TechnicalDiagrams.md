@@ -164,7 +164,23 @@ All the art components, labels, and such should mostly look hand-drawn, similar 
 |-----------|------|-------------|
 | "fast", "quick", "draft" | `--model nano-banana` | Faster iteration, slightly lower quality |
 | (default), "best", "high quality" | `--model nano-banana-pro` | Best quality + text rendering (recommended) |
+| "openai" | `--model gpt-image-2` | Only use if user explicitly wants OpenAI; not preferred for text-heavy diagrams |
 | "flux", "stylistic variety" | `--model flux` | Different aesthetic, stylistic variety |
+
+### Decision Checklist
+
+Before choosing the model, answer:
+1. Does the diagram need readable labels, headers, annotations, or captions?
+2. Does the diagram depend on precise structure or educational clarity?
+3. Does it need transparency for compositing?
+4. Is the request really a conceptual illustration rather than a true diagram?
+5. Is the user explicitly asking for OpenAI?
+
+Choose from the answers:
+- `Yes` to 1 or 2 -> `nano-banana-pro`
+- `Yes` to 3 -> avoid `gpt-image-2`
+- `Yes` to 4 and 5, with light text -> `gpt-image-2`
+- Otherwise -> `nano-banana-pro`
 
 ### Size Selection
 
@@ -202,6 +218,10 @@ bun run ~/.claude/skills/art/Tools/Generate.ts \
   --output /path/to/diagram.png
 ```
 
+### Model Rule
+
+For technical diagrams, frameworks, and annotated visuals, prefer `nano-banana-pro`. `gpt-image-2` is a fallback only when the user explicitly wants OpenAI or when the diagram is light on text and closer to conceptual illustration than a true labeled diagram.
+
 # Validation
 
 After rendering, ensure that you have executed properly by checking this list of musts and must-nots.
@@ -220,4 +240,3 @@ After rendering, ensure that you have executed properly by checking this list of
 - [ ] Generic or ugly fonts
 - [ ] Cartoony or overly casual shapes or styling
 - [ ] Over-coloring (everything purple/teal)
-

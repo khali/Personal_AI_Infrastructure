@@ -88,6 +88,72 @@ Text: Charcoal #2D2D2D
 
 **Default model:** Check user customization at `SKILLCUSTOMIZATIONS/Art/PREFERENCES.md`
 **Fallback:** nano-banana-pro (best text rendering)
+**OpenAI option:** `gpt-image-2` is available through `Tools/Generate.ts` for direct agent-driven image generation.
+
+### Model Selection Rules
+
+Use these rules when choosing a model. If the user does not specify a model, choose based on the actual job instead of defaulting blindly.
+
+### Decision Checklist
+
+Before choosing a model, answer these questions explicitly:
+
+1. Does the image need readable in-image text, labels, or annotations?
+2. Does it need reference-image consistency, recurring characters, or brand continuity?
+3. Does it need transparency?
+4. Is this a fast draft/edit pass or a final-quality deliverable?
+5. Does the user want to stay inside the OpenAI stack?
+
+Pick the model from the answers:
+- `Yes` to 1 or 2 -> `nano-banana-pro`
+- `Yes` to 3 -> avoid `gpt-image-2`
+- `Yes` to 4 for speed -> `nano-banana`
+- `Yes` to 5 with little/no text pressure -> `gpt-image-2`
+
+#### Use `nano-banana` when:
+- You need fast draft iterations or multiple quick options
+- You are editing conversationally from an existing image
+- You care more about speed than perfect final quality
+- You want character/style consistency from reference images without paying for a heavier model
+
+#### Use `nano-banana-pro` when:
+- The image contains important in-image text, labels, annotations, or typography
+- You are making diagrams, infographics, frameworks, posters, or educational visuals
+- You need strong multilingual text rendering
+- You need multi-image fusion or strong reference-image consistency
+- You need higher-resolution Google output, up to 4K
+- You need the most controlled editing workflow in the current art stack
+
+#### Use `gpt-image-2` when:
+- You want OpenAI-native generation or editing from the existing OpenAI API stack
+- You want a high-quality editorial or concept image without heavy in-image text
+- You want OpenAI Responses API multi-turn iteration around the same image concept
+- You want flexible output sizes beyond the older fixed-size OpenAI image path
+- You want to stay inside one OpenAI-driven agent workflow without switching providers
+
+#### Avoid `gpt-image-2` when:
+- You need transparent backgrounds
+- You need precise text placement, infographic labels, or reliable poster typography
+- You need strong recurring character or brand consistency across many generations
+- You need the art tool's reference-image-heavy Google workflow as the primary strategy
+
+#### Avoid `nano-banana` / `nano-banana-pro` when:
+- You specifically want to standardize on OpenAI billing, tooling, or agent orchestration
+- You want OpenAI Responses API-based image iteration in the same conversation state
+
+### Practical Default
+
+If the user just says "make an image" and gives no model preference:
+- Editorial illustration, concept art, hero image with little/no text -> `gpt-image-2`
+- Diagram, infographic, framework, chart, poster, or any text-heavy visual -> `nano-banana-pro`
+- Fast rough options or quick edits -> `nano-banana`
+
+### Important Caveats
+
+- `gpt-image-2` currently does not support transparent backgrounds.
+- OpenAI's docs say text rendering is improved, but it can still struggle with precise placement and clarity.
+- OpenAI's docs also note recurring character and brand consistency can still drift across generations.
+- Nano Banana Pro is the safer default for diagrams, labels, educational visuals, and reference-driven consistency in this skill.
 
 ### CRITICAL: Always Output to Downloads First
 

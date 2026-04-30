@@ -3,7 +3,7 @@
 /**
  * generate - UL Image Generation CLI
  *
- * Generate Unsupervised Learning branded images using Flux 1.1 Pro, Nano Banana, Nano Banana Pro, or GPT-image-1.
+ * Generate Unsupervised Learning branded images using Flux 1.1 Pro, Nano Banana, Nano Banana Pro, GPT-image-1, or GPT-image-2.
  * Follows llcli pattern for deterministic, composable CLI design.
  *
  * Usage:
@@ -26,11 +26,9 @@ import { extname, resolve } from "node:path";
  * Load environment variables from ${PAI_DIR}/.env
  * This ensures API keys are available regardless of how the CLI is invoked
  */
-async function loadEnv(): Promise<void> {
-  const paiDir = process.env.PAI_DIR || resolve(process.env.HOME!, '.claude');
-  const envPath = resolve(paiDir, '.env');
+async function loadEnvFile(path: string): Promise<void> {
   try {
-    const envContent = await readFile(envPath, 'utf-8');
+    const envContent = await readFile(path, 'utf-8');
     for (const line of envContent.split('\n')) {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith('#')) continue;
@@ -38,26 +36,32 @@ async function loadEnv(): Promise<void> {
       if (eqIndex === -1) continue;
       const key = trimmed.slice(0, eqIndex).trim();
       let value = trimmed.slice(eqIndex + 1).trim();
-      // Remove surrounding quotes if present
       if ((value.startsWith('"') && value.endsWith('"')) ||
           (value.startsWith("'") && value.endsWith("'"))) {
         value = value.slice(1, -1);
       }
-      // Only set if not already defined (allow overrides from shell)
       if (!process.env[key]) {
         process.env[key] = value;
       }
     }
-  } catch (error) {
-    // Silently continue if .env doesn't exist - rely on shell env vars
+  } catch {
+    // Silently continue if the file doesn't exist - rely on other config sources
   }
+}
+
+async function loadEnv(): Promise<void> {
+  const homeDir = process.env.HOME!;
+  const paiDir = process.env.PAI_DIR || resolve(homeDir, '.claude');
+  await loadEnvFile(resolve(homeDir, '.config', 'openai.conf'));
+  await loadEnvFile(resolve(paiDir, '.env'));
 }
 
 // ============================================================================
 // Types
 // ============================================================================
 
-type Model = "flux" | "nano-banana" | "nano-banana-pro" | "gpt-image-1";
+type OpenAIModel = "gpt-image-1" | "gpt-image-2";
+type Model = "flux" | "nano-banana" | "nano-banana-pro" | OpenAIModel;
 type ReplicateSize = "1:1" | "16:9" | "3:2" | "2:3" | "3:4" | "4:3" | "4:5" | "5:4" | "9:16" | "21:9";
 type OpenAISize = "1024x1024" | "1536x1024" | "1024x1536";
 type GeminiSize = "1K" | "2K" | "4K";
@@ -132,19 +136,19 @@ function showHelp(): void {
   console.log(`
 generate - UL Image Generation CLI
 
-Generate Unsupervised Learning branded images using Flux 1.1 Pro, Nano Banana, or GPT-image-1.
+Generate Unsupervised Learning branded images using Flux 1.1 Pro, Nano Banana, or OpenAI image generation models.
 
 USAGE:
   generate --model <model> --prompt "<prompt>" [OPTIONS]
 
 REQUIRED:
-  --model <model>      Model to use: flux, nano-banana, nano-banana-pro, gpt-image-1
+  --model <model>      Model to use: flux, nano-banana, nano-banana-pro, gpt-image-1, gpt-image-2
   --prompt <text>      Image generation prompt (quote if contains spaces)
 
 OPTIONS:
   --size <size>              Image size/aspect ratio (default: 16:9)
                              Replicate (flux, nano-banana): 1:1, 16:9, 3:2, 2:3, 3:4, 4:3, 4:5, 5:4, 9:16, 21:9
-                             OpenAI (gpt-image-1): 1024x1024, 1536x1024, 1024x1536
+                             OpenAI (gpt-image-1, gpt-image-2): 1024x1024, 1536x1024, 1024x1536
                              Gemini (nano-banana-pro): 1K, 2K, 4K (resolution); aspect ratio inferred from context or defaults to 16:9
   --aspect-ratio <ratio>     Aspect ratio for Gemini nano-banana-pro (default: 16:9)
                              Options: 1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9
@@ -180,11 +184,11 @@ EXAMPLES:
   # Generate square image with Flux
   generate --model flux --prompt "Minimal geometric art..." --size 1:1 --output /tmp/header.png
 
-  # Generate portrait with GPT-image-1
-  generate --model gpt-image-1 --prompt "Editorial cover..." --size 1024x1536
+  # Generate portrait with GPT-image-2
+  generate --model gpt-image-2 --prompt "Editorial cover..." --size 1024x1536
 
   # Generate 3 creative variations (for testing model variability)
-  generate --model gpt-image-1 --prompt "..." --creative-variations 3 --output /tmp/essay.png
+  generate --model gpt-image-2 --prompt "..." --creative-variations 3 --output /tmp/essay.png
   # Outputs: /tmp/essay-v1.png, /tmp/essay-v2.png, /tmp/essay-v3.png
 
   # Single reference image for style guidance (Nano Banana Pro only)
@@ -206,7 +210,7 @@ MULTI-REFERENCE LIMITS (Gemini API):
 
 ENVIRONMENT VARIABLES:
   REPLICATE_API_TOKEN  Required for flux and nano-banana models
-  OPENAI_API_KEY       Required for gpt-image-1 model
+  OPENAI_API_KEY       Required for gpt-image-1 and gpt-image-2 models
   GOOGLE_API_KEY       Required for nano-banana-pro model
   REMOVEBG_API_KEY     Required for --remove-bg flag
 
@@ -275,8 +279,8 @@ function parseArgs(argv: string[]): CLIArgs {
 
     switch (key) {
       case "model":
-        if (value !== "flux" && value !== "nano-banana" && value !== "nano-banana-pro" && value !== "gpt-image-1") {
-          throw new CLIError(`Invalid model: ${value}. Must be: flux, nano-banana, nano-banana-pro, or gpt-image-1`);
+        if (value !== "flux" && value !== "nano-banana" && value !== "nano-banana-pro" && value !== "gpt-image-1" && value !== "gpt-image-2") {
+          throw new CLIError(`Invalid model: ${value}. Must be: flux, nano-banana, nano-banana-pro, gpt-image-1, or gpt-image-2`);
         }
         parsed.model = value;
         i++; // Skip next arg (value)
@@ -348,9 +352,9 @@ function parseArgs(argv: string[]): CLIArgs {
   }
 
   // Validate size based on model
-  if (parsed.model === "gpt-image-1") {
+  if (parsed.model === "gpt-image-1" || parsed.model === "gpt-image-2") {
     if (!OPENAI_SIZES.includes(parsed.size as OpenAISize)) {
-      throw new CLIError(`Invalid size for gpt-image-1: ${parsed.size}. Must be: ${OPENAI_SIZES.join(", ")}`);
+      throw new CLIError(`Invalid size for ${parsed.model}: ${parsed.size}. Must be: ${OPENAI_SIZES.join(", ")}`);
     }
   } else if (parsed.model === "nano-banana-pro") {
     if (!GEMINI_SIZES.includes(parsed.size as GeminiSize)) {
@@ -495,7 +499,7 @@ async function generateWithNanoBanana(prompt: string, size: ReplicateSize, outpu
   console.log(`Image saved to ${output}`);
 }
 
-async function generateWithGPTImage(prompt: string, size: OpenAISize, output: string): Promise<void> {
+async function generateWithGPTImage(model: OpenAIModel, prompt: string, size: OpenAISize, output: string): Promise<void> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new CLIError("Missing environment variable: OPENAI_API_KEY");
@@ -503,10 +507,10 @@ async function generateWithGPTImage(prompt: string, size: OpenAISize, output: st
 
   const openai = new OpenAI({ apiKey });
 
-  console.log("Generating with GPT-image-1...");
+  console.log(`Generating with ${model}...`);
 
   const response = await openai.images.generate({
-    model: "gpt-image-1",
+    model: model as any,
     prompt,
     size,
     n: 1,
@@ -665,8 +669,8 @@ async function main(): Promise<void> {
               args.referenceImages
             )
           );
-        } else if (args.model === "gpt-image-1") {
-          promises.push(generateWithGPTImage(finalPrompt, args.size as OpenAISize, varOutput));
+        } else if (args.model === "gpt-image-1" || args.model === "gpt-image-2") {
+          promises.push(generateWithGPTImage(args.model, finalPrompt, args.size as OpenAISize, varOutput));
         }
       }
 
@@ -688,8 +692,8 @@ async function main(): Promise<void> {
         args.output,
         args.referenceImages
       );
-    } else if (args.model === "gpt-image-1") {
-      await generateWithGPTImage(finalPrompt, args.size as OpenAISize, args.output);
+    } else if (args.model === "gpt-image-1" || args.model === "gpt-image-2") {
+      await generateWithGPTImage(args.model, finalPrompt, args.size as OpenAISize, args.output);
     }
 
     // Remove background if requested

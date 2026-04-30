@@ -191,6 +191,10 @@ CRITICAL:
 - **Grid layouts** — Organized multi-element compositions
 - **Comparative panels** — Side-by-side or sequential comparisons
 
+### When To Prefer `gpt-image-2` Instead
+
+Use `gpt-image-2` for visualization-adjacent work only when the result is mostly editorial illustration, conceptual scene-building, or mood-driven storytelling with limited in-image text. If the output needs readable labels, chart text, panel headers, or dense annotation, stay with `nano-banana-pro`.
+
 ---
 
 ## 🚨 MANDATORY WORKFLOW STEPS
@@ -564,7 +568,23 @@ Optional: Sign small in bottom right corner in charcoal (#2D2D2D).
 |-----------|------|-------------|
 | "fast", "quick", "draft" | `--model nano-banana` | Faster iteration, slightly lower quality |
 | (default), "best", "high quality" | `--model nano-banana-pro` | Best quality + text rendering (recommended) |
+| "openai", "editorial", "conceptual" | `--model gpt-image-2` | OpenAI-native conceptual visualization with limited text |
 | "flux", "stylistic variety" | `--model flux` | Different aesthetic, stylistic variety |
+
+#### Decision Checklist
+
+Before selecting the model, answer:
+1. Will the visualization contain chart text, panel headers, labels, or callouts?
+2. Does it need to combine multiple referenced subjects or preserve identity/style?
+3. Does it need transparency?
+4. Is the result more like a conceptual editorial scene than a true infographic?
+5. Is this a draft/iteration pass or a polished deliverable?
+
+Choose from the answers:
+- `Yes` to 1 or 2 -> `nano-banana-pro`
+- `Yes` to 3 -> avoid `gpt-image-2`
+- `Yes` to 4 and `No` to 1-3 -> `gpt-image-2`
+- `Yes` to 5 for speed -> `nano-banana`
 
 | User Says | Flag | Resolution |
 |-----------|------|------------|
