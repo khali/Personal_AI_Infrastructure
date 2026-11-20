@@ -110,6 +110,17 @@ Check `~/.claude/skills/CORE/USER/SKILLCUSTOMIZATIONS/Art/PREFERENCES.md` for:
 **Default model:** Check user customization at `SKILLCUSTOMIZATIONS/Art/PREFERENCES.md`
 **Fallback:** nano-banana-pro (Gemini 3 Pro)
 
+**Newest OpenAI models (released 4 Nov 2026):** GPT-Image-2.6 **Sunburst** (`gpt-image-2.6-sunburst`, recommended — highest quality) and **Flare** (`gpt-image-2.6-flare`, fast iteration). Images 2.6 ships in ChatGPT and Codex on all subscription tiers at no API cost — built-in generation counts toward your plan's usage limits.
+
+```bash
+# Example: GPT-Image-2.6 Sunburst (recommended OpenAI model)
+bun run ~/.claude/skills/Art/Tools/Generate.ts \
+  --model gpt-image-2.6-sunburst \
+  --prompt "[PROMPT]" \
+  --size 1536x1024 \
+  --output ~/Downloads/blog-header-sunburst.png
+```
+
 ### 🚨 CRITICAL: Always Output to Downloads First
 
 **ALL generated images MUST go to `~/Downloads/` first for preview and selection.**

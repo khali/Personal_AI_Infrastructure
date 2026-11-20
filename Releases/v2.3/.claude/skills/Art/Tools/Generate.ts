@@ -3,7 +3,7 @@
 /**
  * generate - UL Image Generation CLI
  *
- * Generate Unsupervised Learning branded images using Flux 1.1 Pro, Nano Banana, Nano Banana Pro, or GPT-image-1.
+ * Generate Unsupervised Learning branded images using Flux 1.1 Pro, Nano Banana, Nano Banana Pro, GPT-image-1, or GPT-Image-2.6 (Sunburst / Flare).
  * Follows llcli pattern for deterministic, composable CLI design.
  *
  * Usage:
@@ -57,7 +57,8 @@ async function loadEnv(): Promise<void> {
 // Types
 // ============================================================================
 
-type Model = "flux" | "nano-banana" | "nano-banana-pro" | "gpt-image-1";
+type Model = "flux" | "nano-banana" | "nano-banana-pro" | "gpt-image-1" | "gpt-image-2.6-sunburst" | "gpt-image-2.6-flare";
+type OpenAIModel = "gpt-image-1" | "gpt-image-2.6-sunburst" | "gpt-image-2.6-flare";
 type ReplicateSize = "1:1" | "16:9" | "3:2" | "2:3" | "3:4" | "4:3" | "4:5" | "5:4" | "9:16" | "21:9";
 type OpenAISize = "1024x1024" | "1536x1024" | "1024x1536";
 type GeminiSize = "1K" | "2K" | "4K";
@@ -90,6 +91,30 @@ const DEFAULTS = {
 const REPLICATE_SIZES: ReplicateSize[] = ["1:1", "16:9", "3:2", "2:3", "3:4", "4:3", "4:5", "5:4", "9:16", "21:9"];
 const OPENAI_SIZES: OpenAISize[] = ["1024x1024", "1536x1024", "1024x1536"];
 const GEMINI_SIZES: GeminiSize[] = ["1K", "2K", "4K"];
+
+// GPT-Image-2.6 API models (released 4 Nov 2026). Sunburst is the higher-quality one.
+// https://openai.com/index/introducing-images-2-6/
+const IMAGE_26_MODELS: readonly Model[] = ["gpt-image-2.6-sunburst", "gpt-image-2.6-flare"];
+
+// GPT-Image-2.6 (Sunburst/Flare) accept the recommended sizes above plus custom WIDTHxHEIGHT
+// strings: width/height multiples of 16, aspect ratio between 1:3 and 3:1, neither edge above
+// 3840px, and total pixels between 655,360 and 8,294,400. Quality defaults to "auto".
+// https://developers.openai.com/api/docs/guides/image-generation#customize-image-output
+function isImage26Size(size: string): boolean {
+  if ((OPENAI_SIZES as string[]).includes(size)) return true;
+  const match = /^(\d+)x(\d+)$/.exec(size);
+  if (!match) return false;
+  const width = Number(match[1]);
+  const height = Number(match[2]);
+  const maxEdge = Math.max(width, height);
+  const minEdge = Math.min(width, height);
+  return (
+    width % 16 === 0 && height % 16 === 0 &&
+    maxEdge <= 3840 &&
+    maxEdge / minEdge <= 3 &&
+    width * height >= 655_360 && width * height <= 8_294_400
+  );
+}
 
 // Aspect ratio mapping for Gemini (used with image size like 2K)
 const GEMINI_ASPECT_RATIOS: ReplicateSize[] = ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"];
@@ -132,19 +157,24 @@ function showHelp(): void {
   console.log(`
 generate - UL Image Generation CLI
 
-Generate Unsupervised Learning branded images using Flux 1.1 Pro, Nano Banana, or GPT-image-1.
+Generate Unsupervised Learning branded images using Flux 1.1 Pro, Nano Banana, Nano Banana Pro, GPT-image-1, or GPT-Image-2.6 (Sunburst / Flare).
 
 USAGE:
   generate --model <model> --prompt "<prompt>" [OPTIONS]
 
 REQUIRED:
-  --model <model>      Model to use: flux, nano-banana, nano-banana-pro, gpt-image-1
+  --model <model>      Model to use: flux, nano-banana, nano-banana-pro, gpt-image-1,
+                       gpt-image-2.6-sunburst (recommended OpenAI model - highest quality),
+                       gpt-image-2.6-flare (fast iteration)
   --prompt <text>      Image generation prompt (quote if contains spaces)
 
 OPTIONS:
   --size <size>              Image size/aspect ratio (default: 16:9)
                              Replicate (flux, nano-banana): 1:1, 16:9, 3:2, 2:3, 3:4, 4:3, 4:5, 5:4, 9:16, 21:9
                              OpenAI (gpt-image-1): 1024x1024, 1536x1024, 1024x1536
+                             GPT-Image-2.6 (Sunburst/Flare, recommended): 1024x1024, 1536x1024,
+                             1024x1536, or custom WIDTHxHEIGHT (multiples of 16, aspect ratio
+                             1:3 to 3:1, max edge 3840px, 655,360-8,294,400 total pixels)
                              Gemini (nano-banana-pro): 1K, 2K, 4K (resolution); aspect ratio inferred from context or defaults to 16:9
   --aspect-ratio <ratio>     Aspect ratio for Gemini nano-banana-pro (default: 16:9)
                              Options: 1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9
@@ -183,6 +213,12 @@ EXAMPLES:
   # Generate portrait with GPT-image-1
   generate --model gpt-image-1 --prompt "Editorial cover..." --size 1024x1536
 
+  # Generate blog header with GPT-Image-2.6 Sunburst (recommended OpenAI model; highest quality)
+  generate --model gpt-image-2.6-sunburst --prompt "Editorial cover..." --size 1536x1024
+
+  # Fast draft with GPT-Image-2.6 Flare (custom 16:9 size)
+  generate --model gpt-image-2.6-flare --prompt "Poster concept..." --size 1536x864
+
   # Generate 3 creative variations (for testing model variability)
   generate --model gpt-image-1 --prompt "..." --creative-variations 3 --output /tmp/essay.png
   # Outputs: /tmp/essay-v1.png, /tmp/essay-v2.png, /tmp/essay-v3.png
@@ -206,7 +242,7 @@ MULTI-REFERENCE LIMITS (Gemini API):
 
 ENVIRONMENT VARIABLES:
   REPLICATE_API_TOKEN  Required for flux and nano-banana models
-  OPENAI_API_KEY       Required for gpt-image-1 model
+  OPENAI_API_KEY       Required for gpt-image-1 and GPT-Image-2.6 (Sunburst/Flare) models
   GOOGLE_API_KEY       Required for nano-banana-pro model
   REMOVEBG_API_KEY     Required for --remove-bg flag
 
@@ -275,8 +311,8 @@ function parseArgs(argv: string[]): CLIArgs {
 
     switch (key) {
       case "model":
-        if (value !== "flux" && value !== "nano-banana" && value !== "nano-banana-pro" && value !== "gpt-image-1") {
-          throw new CLIError(`Invalid model: ${value}. Must be: flux, nano-banana, nano-banana-pro, or gpt-image-1`);
+        if (value !== "flux" && value !== "nano-banana" && value !== "nano-banana-pro" && value !== "gpt-image-1" && value !== "gpt-image-2.6-sunburst" && value !== "gpt-image-2.6-flare") {
+          throw new CLIError(`Invalid model: ${value}. Must be: flux, nano-banana, nano-banana-pro, gpt-image-1, gpt-image-2.6-sunburst, or gpt-image-2.6-flare`);
         }
         parsed.model = value;
         i++; // Skip next arg (value)
@@ -351,6 +387,10 @@ function parseArgs(argv: string[]): CLIArgs {
   if (parsed.model === "gpt-image-1") {
     if (!OPENAI_SIZES.includes(parsed.size as OpenAISize)) {
       throw new CLIError(`Invalid size for gpt-image-1: ${parsed.size}. Must be: ${OPENAI_SIZES.join(", ")}`);
+    }
+  } else if (IMAGE_26_MODELS.includes(parsed.model as Model)) {
+    if (!isImage26Size(parsed.size)) {
+      throw new CLIError(`Invalid size for ${parsed.model}: ${parsed.size}. Must be: ${OPENAI_SIZES.join(", ")}, or custom WIDTHxHEIGHT (multiples of 16, aspect ratio 1:3 to 3:1, max edge 3840px, 655,360-8,294,400 total pixels)`);
     }
   } else if (parsed.model === "nano-banana-pro") {
     if (!GEMINI_SIZES.includes(parsed.size as GeminiSize)) {
@@ -495,7 +535,7 @@ async function generateWithNanoBanana(prompt: string, size: ReplicateSize, outpu
   console.log(`✅ Image saved to ${output}`);
 }
 
-async function generateWithGPTImage(prompt: string, size: OpenAISize, output: string): Promise<void> {
+async function generateWithGPTImage(prompt: string, model: OpenAIModel, size: OpenAISize, output: string): Promise<void> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new CLIError("Missing environment variable: OPENAI_API_KEY");
@@ -503,10 +543,10 @@ async function generateWithGPTImage(prompt: string, size: OpenAISize, output: st
 
   const openai = new OpenAI({ apiKey });
 
-  console.log("🤖 Generating with GPT-image-1...");
+  console.log(`🤖 Generating with ${model}...`);
 
   const response = await openai.images.generate({
-    model: "gpt-image-1",
+    model,
     prompt,
     size,
     n: 1,
@@ -665,8 +705,8 @@ async function main(): Promise<void> {
               args.referenceImages
             )
           );
-        } else if (args.model === "gpt-image-1") {
-          promises.push(generateWithGPTImage(finalPrompt, args.size as OpenAISize, varOutput));
+        } else if (IMAGE_26_MODELS.includes(args.model) || args.model === "gpt-image-1") {
+          promises.push(generateWithGPTImage(finalPrompt, args.model as OpenAIModel, args.size as OpenAISize, varOutput));
         }
       }
 
@@ -688,8 +728,8 @@ async function main(): Promise<void> {
         args.output,
         args.referenceImages
       );
-    } else if (args.model === "gpt-image-1") {
-      await generateWithGPTImage(finalPrompt, args.size as OpenAISize, args.output);
+    } else if (IMAGE_26_MODELS.includes(args.model) || args.model === "gpt-image-1") {
+      await generateWithGPTImage(finalPrompt, args.model as OpenAIModel, args.size as OpenAISize, args.output);
     }
 
     // Remove background if requested
